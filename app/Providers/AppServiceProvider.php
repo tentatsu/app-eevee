@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\App;
 use App\Models\AppUser;
 use App\Support\Tenancy\CurrentMembership;
 use App\Support\Tenancy\TenantContext;
@@ -50,11 +51,21 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('view-audit-logs', fn ($user) => $role()?->canViewAuditLogs() ?? false);
     }
 
+    /**
+     * レート制限のキーに使うアプリ。ResolveAppByKey がルートから app_key を外すため、解決済みのアプリを優先する。
+     */
+    private static function appKeyOf(Request $request): string
+    {
+        $app = $request->attributes->get('eevee_app');
+
+        return $app instanceof App ? $app->app_key : (string) $request->route('app_key');
+    }
+
     private function defineRateLimiters(): void
     {
         // アプリ向けAPI: アプリ単位とIP単位
         RateLimiter::for('app-api', function (Request $request) {
-            $appKey = (string) $request->route('app_key');
+            $appKey = self::appKeyOf($request);
 
             return [
                 Limit::perMinute((int) config('eevee.rate_limits.app_per_minute'))->by('app:'.$appKey),
@@ -64,7 +75,7 @@ class AppServiceProvider extends ServiceProvider
 
         // ログイン・登録・パスワード再設定（総当たり対策）
         RateLimiter::for('app-auth', function (Request $request) {
-            $appKey = (string) $request->route('app_key');
+            $appKey = self::appKeyOf($request);
 
             return [
                 Limit::perMinute((int) config('eevee.rate_limits.auth_per_minute'))
@@ -75,7 +86,7 @@ class AppServiceProvider extends ServiceProvider
         // サーバー間API: アプリ単位
         RateLimiter::for('server-api', function (Request $request) {
             return Limit::perMinute((int) config('eevee.rate_limits.server_per_minute'))
-                ->by('server:'.(string) $request->route('app_key'));
+                ->by('server:'.self::appKeyOf($request));
         });
 
         // 管理画面のログイン

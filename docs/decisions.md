@@ -48,3 +48,43 @@
 ## D-007 Larastan のキャスト推論
 
 - `phpstan.neon` で `parseModelCastsMethod: true` を有効にしている。Laravel 11 以降の `casts()` メソッドに書いたキャストを Larastan が型として認識するために必要。
+
+## D-008 app_secret はハッシュで保存し、サーバー間APIは Bearer 方式で認証する
+
+- **判断**: `app_secret` は SHA-256 のハッシュだけを保存し、平文は発行・再発行の直後に一度だけ画面に表示する。サーバー間APIは `Authorization: Bearer {app_secret}` で認証する（HTTPS 前提）。
+- **理由**: 仕様で「ハッシュ化して保存」とされている。HMAC 署名方式はサーバー側で秘密値の平文（または可逆な形）が必要になり、ハッシュ保存と両立しない。秘密値は48文字のランダム文字列で総当たりが現実的でないため、bcrypt ではなく SHA-256 で十分（定数時間比較 `hash_equals` を使う）。
+- **代替案**: 秘密値を暗号化して保存し、`X-Eevee-Signature: HMAC-SHA256(timestamp + body)` で署名検証する方式（リプレイ対策・改ざん検知ができる）。ハッシュ保存の要件を外せるなら将来追加する。
+
+## D-009 アプリユーザーの属性の保存形式と正規化
+
+- 属性は `app_users.custom_attributes`（JSON）に保存する。カラム名を `attributes` にしなかったのは、Eloquent の内部プロパティ `$attributes` と衝突するため（API では `attributes` として返す）。
+- 書き込み時に「属性の定義」の型で正規化する: `int` は整数、`decimal` は小数（4桁で丸め）、`bool` は true/false、`date` は UTC の `Y-m-d H:i:s` 文字列（タイムゾーン付きの ISO 8601 も受け付けて UTC に変換）。正規化しておくことで、セグメントの SQL で文字列比較・CAST がそのまま使える。
+- 定義にないキーはエラー。`null` を指定したキーは削除。定義を削除してもユーザーに保存済みの値は残す（再定義すれば再び使える）。キーと型は作成後に変更できない（既存データとの不整合を防ぐ）。
+- アプリからの更新は「アプリから更新可」の定義だけ。サーバー間APIの一括更新は全件を先に検証し、1件でも不正なら何も更新しない。
+
+## D-010 アプリユーザーのトークン
+
+- builtin 方式: Sanctum のトークンを有効期限 365 日で発行する（`config/eevee.php` の `app_users.builtin_token_ttl_days`）。パスワード再設定に成功すると全トークンを無効にする。
+- external 方式: 顧客のバックエンドがサーバー間APIで `POST /users/{external_user_id}/tokens` を呼び、短命（初期値 60 分、アプリごとに設定可）のトークンをアプリに渡す。期限が切れたらアプリは顧客のバックエンド経由で再取得する。
+- パスワード再設定はメールで「再設定コード」（10文字）を送り、アプリの画面で入力してもらう方式にした。モバイルアプリではメールのリンクからアプリに戻す（ユニバーサルリンク等）設定がアプリごとに必要で、母体として共通化しにくいため。コードは有効期限 60 分、レート制限（1分10回）あり。
+- 認証方式が合わない API を呼ぶと `409 auth_mode_mismatch` を返す。
+
+## D-011 通知カテゴリの受信設定はユーザー単位
+
+- **判断**: カテゴリのオン・オフは `app_users.notification_preferences`（JSON）に保存する。未設定のカテゴリはカテゴリの初期値に従う。ログインしていない端末は常にカテゴリの初期値として扱う。
+- **理由**: 仕様で「AppUser に持たせる」とされているため。
+- **代替案**: 端末単位で持つ（未ログインでも設定できる）。必要になったら `devices.notification_preferences` を追加し、ユーザーの設定を優先する形で拡張できる。
+
+## D-012 端末の登録
+
+- `installation_id` をキーに upsert する。ユーザーのトークン付きで呼ぶとその端末をユーザーに紐づける。ログイン API・トークン発行 API に `installation_id` を渡しても紐づく。ログアウト API に `installation_id` を渡すと紐づけを外す。
+- 同じ FCM トークンを持つ別の端末（再インストールで installation_id が変わった場合など）があれば、古い端末のトークンを外して無効化する（二重送信の防止）。
+- 無効化された端末でも、新しい FCM トークンが登録されれば有効に戻す。
+- バージョン比較のため `app_version` から比較用の整数 `app_version_num` を自動で作る（`major * 10^12 + minor * 10^6 + patch`）。
+
+## D-013 API のレスポンス形式
+
+- 成功: `{"data": ..., "meta": {...}}`（`meta` はページングなど必要なときだけ）
+- 失敗: `{"error": {"code": "機械が読めるコード", "message": "説明", "details": {...}}}`。バリデーションエラーは `422 validation_failed` で `details.fields` に項目ごとのメッセージ。
+- 主なコード: `app_not_found`, `unauthenticated`, `invalid_credentials`, `invalid_app_secret`, `forbidden`, `not_found`, `validation_failed`, `rate_limited`, `auth_mode_mismatch`, `user_not_found`, `device_not_found`, `invalid_reset_token`, `server_error`（動画・プッシュのコードは各フェーズで追加）。一覧は `docs/client-integration.md`。
+- レート制限: アプリ単位（初期値 6000/分）と IP 単位（300/分）の両方。ログイン系はさらに IP＋メールアドレス単位で 10/分。サーバー間APIはアプリ単位で 1200/分。いずれも `.env` で変更できる。

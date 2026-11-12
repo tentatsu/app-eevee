@@ -33,6 +33,8 @@ class ResolveAppByKey
 
         $this->tenant->setApp($app);
         $request->attributes->set('eevee_app', $app);
+        // コントローラーには app_key を渡さない（以降のルートパラメータを名前・位置どちらでも受け取れるように）
+        $route->forgetParameter('app_key');
 
         return $next($request);
     }

@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuthenticateAppSecret;
 use App\Http\Middleware\EnsureAppUserToken;
 use App\Http\Middleware\EnsureOrganizationMember;
+use App\Http\Middleware\ResetTenantContext;
 use App\Http\Middleware\ResolveAppByKey;
 use App\Http\Middleware\ResolveCurrentApp;
 use App\Http\Middleware\ResolveOrganization;
@@ -51,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->replace(Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
+        $middleware->prepend(ResetTenantContext::class);
 
         $middleware->alias([
             'org' => ResolveOrganization::class,

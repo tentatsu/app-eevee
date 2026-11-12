@@ -1,12 +1,12 @@
 <?php
 
 use App\Enums\OrgRole;
+use App\Models\App;
 use App\Models\AuditLog;
 use App\Models\IpAllowEntry;
 use App\Models\Organization;
 use App\Support\Ip\IpRange;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 beforeEach(function () {
@@ -67,12 +67,13 @@ it('logs denied access', function () {
     fromIp('198.51.100.9')->get('/acme/login')->assertForbidden();
 });
 
-it('does not apply to the app API or webhooks', function () {
+it('does not apply to the app API', function () {
     allow($this->org, '203.0.113.0/24');
-    // /api と /webhooks は組織の管理画面ルートではないため IP 制限の対象外（404 は存在しない app_key のため）
-    fromIp('198.51.100.1')->getJson('/api/v1/apps/ak_unknown/notices')->assertNotFound()->assertJsonPath('error.code', 'app_not_found');
-    fromIp('198.51.100.1')->postJson('/webhooks/cloudflare/ak_unknown')->assertNotFound();
-})->skip(fn () => ! Route::has('api.notices.index'), 'API routes are added in a later phase');
+    $app = App::factory()->for($this->org)->create();
+    fromIp('198.51.100.1')->getJson("/api/v1/apps/{$app->app_key}/notification-categories")->assertOk();
+    $secret = $app->regenerateSecret();
+    fromIp('198.51.100.1')->withToken($secret)->getJson("/api/v1/server/apps/{$app->app_key}/users/nobody")->assertNotFound()->assertJsonPath('error.code', 'user_not_found');
+});
 
 it('uses X-Forwarded-For only from trusted proxies', function () {
     allow($this->org, '203.0.113.0/24');
