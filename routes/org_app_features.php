@@ -14,3 +14,6 @@ Route::resource('campaigns', Apps\CampaignController::class);
 Route::post('campaigns/{campaign}/send', [Apps\CampaignController::class, 'send'])->name('campaigns.send');
 Route::post('campaigns/{campaign}/cancel', [Apps\CampaignController::class, 'cancel'])->name('campaigns.cancel');
 Route::post('campaigns/{campaign}/test', [Apps\CampaignController::class, 'sendTest'])->name('campaigns.test');
+
+Route::resource('notices', Apps\NoticeController::class)->except(['show']);
+Route::post('notices/{notice}/push', [Apps\NoticeController::class, 'push'])->name('notices.push');
