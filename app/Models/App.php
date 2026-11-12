@@ -29,6 +29,18 @@ class App extends Model
         'push_rate_per_second', 'delivery_log_retention_days', 'external_token_ttl_minutes',
     ];
 
+    /** DB の既定値と同じ（作成直後のモデルでも値を持たせる） */
+    protected $attributes = [
+        'auth_mode' => 'builtin',
+        'video_provider' => 'cloudflare_stream',
+        'max_concurrent_streams' => 2,
+        'concurrency_policy' => 'reject',
+        'playback_token_grace_minutes' => 10,
+        'push_rate_per_second' => 20,
+        'delivery_log_retention_days' => 90,
+        'external_token_ttl_minutes' => 60,
+    ];
+
     /** 秘密情報はシリアライズ（JSON/ログ）に含めない */
     protected $hidden = ['app_secret_hash', 'firebase_credentials', 'video_provider_settings'];
 

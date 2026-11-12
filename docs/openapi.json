@@ -1,0 +1,2997 @@
+{
+    "openapi": "3.1.2",
+    "info": {
+        "title": "app-eevee API",
+        "version": "1.0.0",
+        "description": "app-eevee \u306e\u30a2\u30d7\u30ea\u5411\u3051API\u3068\u30b5\u30fc\u30d0\u30fc\u9593API\u3067\u3059\u3002\u7d44\u307f\u8fbc\u307f\u624b\u9806\u306f `docs/client-integration.md` \u3092\u53c2\u7167\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n\n## \u30d9\u30fc\u30b9URL\n- \u30a2\u30d7\u30ea\u5411\u3051API: `/api/v1/apps/{app_key}/...`\uff08`app_key` \u306f\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\u3055\u308c\u308b\u516c\u958bID\uff09\n- \u30b5\u30fc\u30d0\u30fc\u9593API: `/api/v1/server/apps/{app_key}/...`\uff08\u9867\u5ba2\u306e\u30d0\u30c3\u30af\u30a8\u30f3\u30c9\u304b\u3089\u547c\u3076\uff09\n\n## \u8a8d\u8a3c\n- **userToken**: \u30ed\u30b0\u30a4\u30f3\u304c\u5fc5\u8981\u306a\u30a2\u30d7\u30ea\u5411\u3051API\u3002\u30ed\u30b0\u30a4\u30f3API\uff08builtin\uff09\u307e\u305f\u306f\u30b5\u30fc\u30d0\u30fc\u9593API\u306e\u30c8\u30fc\u30af\u30f3\u767a\u884c\uff08external\uff09\u3067\u5f97\u305f\u30c8\u30fc\u30af\u30f3\u3092 `Authorization: Bearer {token}` \u3067\u9001\u308b\u3002\n  \u300c\u672a\u30ed\u30b0\u30a4\u30f3\u3067\u3082\u4f7f\u3048\u308bAPI\u300d\u306b\u30c8\u30fc\u30af\u30f3\u3092\u4ed8\u3051\u308b\u3068\u3001\u30e6\u30fc\u30b6\u30fc\u3092\u7279\u5b9a\u3057\u3066\u7d50\u679c\u304c\u5909\u308f\u308b\uff08\u4f8b: \u30bb\u30b0\u30e1\u30f3\u30c8\u5411\u3051\u306e\u304a\u77e5\u3089\u305b\uff09\u3002\u4e0d\u6b63\u306a\u30c8\u30fc\u30af\u30f3\u3092\u4ed8\u3051\u308b\u3068 401\u3002\n- **appSecret**: \u30b5\u30fc\u30d0\u30fc\u9593API\u3002`Authorization: Bearer {app_secret}`\u3002app_secret \u306f\u7ba1\u7406\u753b\u9762\u3067\u767a\u884c\u3057\u3001\u30a2\u30d7\u30ea\u306b\u306f\u57cb\u3081\u8fbc\u307e\u306a\u3044\u3053\u3068\u3002\n\n## \u30ec\u30b9\u30dd\u30f3\u30b9\u5f62\u5f0f\n- \u6210\u529f: `{\"data\": ..., \"meta\": {...}}`\uff08\u4e00\u89a7\u306f `meta.current_page`, `meta.per_page`, `meta.total`, `meta.last_page`\uff09\n- \u5931\u6557: `{\"error\": {\"code\": \"machine_readable_code\", \"message\": \"...\", \"details\": {...}}}`\n  - \u30d0\u30ea\u30c7\u30fc\u30b7\u30e7\u30f3\u30a8\u30e9\u30fc: `422 validation_failed`\uff08`details.fields.{\u9805\u76ee\u540d}` \u306b\u30e1\u30c3\u30bb\u30fc\u30b8\u306e\u914d\u5217\uff09\n  - \u4e3b\u306a\u30b3\u30fc\u30c9: `app_not_found`, `unauthenticated`, `invalid_credentials`, `invalid_app_secret`, `forbidden`, `not_found`, `rate_limited`,\n    `auth_mode_mismatch`, `user_not_found`, `device_not_found`, `delivery_not_found`, `invalid_reset_token`, `notice_not_found`,\n    `video_not_available`, `login_required`, `installation_id_required`, `concurrent_limit_exceeded`, `session_not_found`,\n    `video_provider_not_configured`, `server_error`\n\n## \u30ec\u30fc\u30c8\u5236\u9650\n\u30a2\u30d7\u30ea\u5358\u4f4d\u30fbIP\u5358\u4f4d\u3067\u5236\u9650\u304c\u3042\u308a\u3001\u8d85\u3048\u308b\u3068 `429 rate_limited`\uff08`Retry-After` \u30d8\u30c3\u30c0\u30fc\u4ed8\u304d\uff09\u3002"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api/v1"
+        }
+    ],
+    "paths": {
+        "/apps/{app_key}/notices": {
+            "get": {
+                "operationId": "notices.index",
+                "description": "\u516c\u958b\u4e2d\u3067\u3001\u305d\u306e\u30e6\u30fc\u30b6\u30fc\u304c\u5bfe\u8c61\u306e\u304a\u77e5\u3089\u305b\u3060\u3051\u3092\u8fd4\u3059\uff08\u30d4\u30f3\u7559\u3081 \u2192 \u65b0\u3057\u3044\u9806\uff09\u3002\u30c8\u30fc\u30af\u30f3\u3092\u4ed8\u3051\u308b\u3068\u3001\u30bb\u30b0\u30e1\u30f3\u30c8\u5411\u3051\u306e\u304a\u77e5\u3089\u305b\u3068\u65e2\u8aad\u72b6\u614b\uff08`is_read`\uff09\u3082\u542b\u3080\u3002",
+                "summary": "\u304a\u77e5\u3089\u305b\u306e\u4e00\u89a7",
+                "tags": [
+                    "\u304a\u77e5\u3089\u305b",
+                    "Notice"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "meta": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/notices/{notice}": {
+            "get": {
+                "operationId": "notices.show",
+                "description": "\u672c\u6587\u306f Markdown\uff08`body`\uff09\u3068\u3001\u5909\u63db\u6e08\u307f\u306e HTML\uff08`body_html`\uff09\u306e\u4e21\u65b9\u3092\u8fd4\u3059\u3002",
+                "summary": "\u304a\u77e5\u3089\u305b\u306e\u8a73\u7d30",
+                "tags": [
+                    "\u304a\u77e5\u3089\u305b",
+                    "Notice"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "notice",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "thumbnail_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_pinned": {
+                                                    "type": "boolean"
+                                                },
+                                                "published_at": {
+                                                    "type": "string"
+                                                },
+                                                "publish_end_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_read": {
+                                                    "type": "string"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "body_html": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "title",
+                                                "thumbnail_url",
+                                                "is_pinned",
+                                                "published_at",
+                                                "publish_end_at",
+                                                "is_read",
+                                                "body",
+                                                "body_html"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "notice_not_found"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "The notice was not found."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/notices/unread-count": {
+            "get": {
+                "operationId": "notices.unread",
+                "summary": "\u672a\u8aad\u6570",
+                "tags": [
+                    "\u304a\u77e5\u3089\u305b",
+                    "Notice"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "unread_count": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "unread_count"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/notices/{notice}/read": {
+            "post": {
+                "operationId": "notices.read",
+                "summary": "\u65e2\u8aad\u306b\u3059\u308b",
+                "tags": [
+                    "\u304a\u77e5\u3089\u305b",
+                    "Notice"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "notice",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "read": {
+                                                    "type": "boolean"
+                                                },
+                                                "unread_count": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "read",
+                                                "unread_count"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "notice_not_found"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "The notice was not found."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/server/apps/{app_key}/users/attributes": {
+            "post": {
+                "operationId": "server.users.attributes",
+                "description": "\u6700\u5927 1000 \u4ef6\u3002\u5404\u8981\u7d20\u306f `external_user_id` \u307e\u305f\u306f `user_id` \u3067\u30e6\u30fc\u30b6\u30fc\u3092\u6307\u5b9a\u3059\u308b\u3002\n\u5b58\u5728\u3057\u306a\u3044\u30e6\u30fc\u30b6\u30fc\u306f `not_found` \u306b\u5165\u308b\uff08external \u65b9\u5f0f\u3067 `create_missing: true` \u3092\u6307\u5b9a\u3059\u308b\u3068\u4f5c\u6210\u3059\u308b\uff09\u3002",
+                "summary": "\u5c5e\u6027\u306e\u4e00\u62ec\u66f4\u65b0",
+                "tags": [
+                    "\u30b5\u30fc\u30d0\u30fc\u9593API",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "users": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "external_user_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "maxLength": 191
+                                                },
+                                                "user_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "attributes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "minItems": 1
+                                                }
+                                            },
+                                            "required": [
+                                                "attributes"
+                                            ]
+                                        },
+                                        "minItems": 1,
+                                        "maxItems": 1000
+                                    },
+                                    "create_missing": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "users"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "updated": {
+                                                    "type": "integer",
+                                                    "const": 0
+                                                },
+                                                "not_found": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "minItems": 0,
+                                                    "maxItems": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "updated",
+                                                "not_found"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "appSecret": []
+                    }
+                ]
+            }
+        },
+        "/server/apps/{app_key}/users/{external_user_id}": {
+            "put": {
+                "operationId": "server.users.upsert",
+                "description": "\u9867\u5ba2\u306e\u30d0\u30c3\u30af\u30a8\u30f3\u30c9\u304c\u8a8d\u8a3c\u3057\u305f\u30e6\u30fc\u30b6\u30fc\u3092\u3001`external_user_id` \u3092\u30ad\u30fc\u306b\u767b\u9332\u30fb\u66f4\u65b0\u3059\u308b\u3002\u5c5e\u6027\u306f\u5b9a\u7fa9\u306b\u5f93\u3063\u3066\u691c\u8a3c\u3057\u3001\u30de\u30fc\u30b8\u3059\u308b\uff08`null` \u3067\u524a\u9664\uff09\u3002",
+                "summary": "\u30e6\u30fc\u30b6\u30fc\u306e\u767b\u9332\u30fb\u66f4\u65b0\uff08external \u65b9\u5f0f\uff09",
+                "tags": [
+                    "\u30b5\u30fc\u30d0\u30fc\u9593API",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "external_user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 191
+                                    },
+                                    "email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 191
+                                    },
+                                    "attributes": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "appSecret": []
+                    }
+                ]
+            },
+            "get": {
+                "operationId": "server.users.show",
+                "summary": "\u30e6\u30fc\u30b6\u30fc\u306e\u53d6\u5f97",
+                "tags": [
+                    "\u30b5\u30fc\u30d0\u30fc\u9593API",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "external_user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "external_user_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "attributes": {
+                                                    "type": "string"
+                                                },
+                                                "notification_preferences": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "email",
+                                                "external_user_id",
+                                                "name",
+                                                "attributes",
+                                                "notification_preferences",
+                                                "created_at"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "appSecret": []
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "server.users.destroy",
+                "description": "\u30e6\u30fc\u30b6\u30fc\u3068\u30c8\u30fc\u30af\u30f3\u3092\u524a\u9664\u3059\u308b\u3002\u7aef\u672b\u306f\u6b8b\u308a\u3001\u672a\u30ed\u30b0\u30a4\u30f3\u306e\u7aef\u672b\u3068\u3057\u3066\u6271\u308f\u308c\u308b\u3002",
+                "summary": "\u30e6\u30fc\u30b6\u30fc\u306e\u524a\u9664",
+                "tags": [
+                    "\u30b5\u30fc\u30d0\u30fc\u9593API",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "external_user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "deleted": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "deleted"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "appSecret": []
+                    }
+                ]
+            }
+        },
+        "/server/apps/{app_key}/users/{external_user_id}/tokens": {
+            "post": {
+                "operationId": "server.users.tokens",
+                "description": "\u30a2\u30d7\u30ea\u306b\u6e21\u3059\u77ed\u547d\u306e\u30c8\u30fc\u30af\u30f3\u3092\u767a\u884c\u3059\u308b\u3002\u6709\u52b9\u671f\u9650\u306f\u30a2\u30d7\u30ea\u8a2d\u5b9a\u306e\u300cexternal \u65b9\u5f0f\u306e\u30c8\u30fc\u30af\u30f3\u306e\u6709\u52b9\u671f\u9650\u300d\u3002\n`installation_id` \u3092\u6e21\u3059\u3068\u3001\u305d\u306e\u7aef\u672b\u3092\u30e6\u30fc\u30b6\u30fc\u306b\u7d10\u3065\u3051\u308b\u3002",
+                "summary": "\u30a2\u30d7\u30ea\u7528\u30c8\u30fc\u30af\u30f3\u306e\u767a\u884c\uff08external \u65b9\u5f0f\uff09",
+                "tags": [
+                    "\u30b5\u30fc\u30d0\u30fc\u9593API",
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "external_user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uuid"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "const": "Bearer"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "email": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "external_user_id": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "attributes": {
+                                                            "type": "string"
+                                                        },
+                                                        "notification_preferences": {
+                                                            "type": "string"
+                                                        },
+                                                        "created_at": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "email",
+                                                        "external_user_id",
+                                                        "name",
+                                                        "attributes",
+                                                        "notification_preferences",
+                                                        "created_at"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "token_type",
+                                                "expires_at",
+                                                "user"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "appSecret": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/push/opened": {
+            "post": {
+                "operationId": "push.opened",
+                "description": "\u30e6\u30fc\u30b6\u30fc\u304c\u901a\u77e5\u3092\u30bf\u30c3\u30d7\u3057\u3066\u30a2\u30d7\u30ea\u3092\u958b\u3044\u305f\u3068\u304d\u306b\u547c\u3076\u3002`campaign_id` \u306f\u901a\u77e5\u306e data \u306b\u5165\u3063\u3066\u3044\u308b `eevee_campaign_id`\u3002\n\u540c\u3058\u7aef\u672b\u3067\u4f55\u5ea6\u547c\u3093\u3067\u3082 1 \u56de\u3068\u3057\u3066\u6570\u3048\u308b\u3002",
+                "summary": "\u901a\u77e5\u306e\u958b\u5c01\u3092\u8a18\u9332",
+                "tags": [
+                    "\u30d7\u30c3\u30b7\u30e5\u901a\u77e5",
+                    "Push"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "campaign_id": {
+                                        "type": "integer"
+                                    },
+                                    "installation_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "campaign_id",
+                                    "installation_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "recorded": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "recorded"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "delivery_not_found"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "No delivery was found for this campaign and device."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/videos": {
+            "get": {
+                "operationId": "videos.index",
+                "description": "\u518d\u751f\u53ef\u80fd\u3067\u516c\u958b\u671f\u9593\u5185\u306e\u52d5\u753b\uff08\u4e26\u3073\u9806 \u2192 \u65b0\u3057\u3044\u9806\uff09\u3002\u30e1\u30f3\u30d0\u30fc\u9650\u5b9a\u306e\u52d5\u753b\u3082\u4e00\u89a7\u306b\u306f\u542b\u3081\u3001`playable` \u3067\u518d\u751f\u3067\u304d\u308b\u304b\u3092\u8fd4\u3059\u3002\n`category`\u30fb`tag` \u3067\u7d5e\u308a\u8fbc\u3081\u308b\u3002",
+                "summary": "\u52d5\u753b\u306e\u4e00\u89a7",
+                "tags": [
+                    "\u52d5\u753b",
+                    "Video"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 64
+                        }
+                    },
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 64
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "meta": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/videos/{video}": {
+            "get": {
+                "operationId": "videos.show",
+                "summary": "\u52d5\u753b\u306e\u8a73\u7d30",
+                "tags": [
+                    "\u52d5\u753b",
+                    "Video"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "video",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "video_not_available"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "The video is not available."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/videos/{video}/play": {
+            "post": {
+                "operationId": "videos.play",
+                "description": "\u8996\u8074\u6a29\u9650\u3068\u540c\u6642\u8996\u8074\u6570\u3092\u78ba\u8a8d\u3057\u3001\u8996\u8074\u30bb\u30c3\u30b7\u30e7\u30f3\u3068\u7f72\u540d\u4ed8\u304d\u306e HLS / DASH \u306e URL \u3092\u8fd4\u3059\u3002\n\u4ee5\u5f8c\u306f `heartbeat_interval` \u79d2\u3054\u3068\u306b heartbeat \u3092\u547c\u3076\u3002\u672a\u30ed\u30b0\u30a4\u30f3\u3067\u516c\u958b\u52d5\u753b\u3092\u518d\u751f\u3059\u308b\u5834\u5408\u306f `installation_id` \u304c\u5fc5\u9808\u3002\n\n\u4e0a\u9650\u3092\u8d85\u3048\u305f\u5834\u5408: \u30a2\u30d7\u30ea\u306e\u8a2d\u5b9a\u304c\u300c\u62d2\u5426\u300d\u306a\u3089 `409 concurrent_limit_exceeded`\u3002\u300c\u6700\u3082\u53e4\u3044\u30bb\u30c3\u30b7\u30e7\u30f3\u3092\u505c\u6b62\u300d\u306a\u3089\u518d\u751f\u3067\u304d\u3001\n\u505c\u6b62\u3055\u308c\u305f\u30bb\u30c3\u30b7\u30e7\u30f3\u306f\u6b21\u306e heartbeat \u3067 `stop`\uff08reason=kicked\uff09\u306b\u306a\u308b\u3002",
+                "summary": "\u518d\u751f\u3092\u958b\u59cb\u3059\u308b",
+                "tags": [
+                    "\u52d5\u753b",
+                    "Video"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "video",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uuid"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "session_id": {
+                                                    "type": "string"
+                                                },
+                                                "hls_url": {
+                                                    "type": "string"
+                                                },
+                                                "dash_url": {
+                                                    "type": "string"
+                                                },
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "heartbeat_interval": {
+                                                    "type": "integer"
+                                                },
+                                                "heartbeat_timeout": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "session_id",
+                                                "hls_url",
+                                                "dash_url",
+                                                "token",
+                                                "expires_at",
+                                                "heartbeat_interval",
+                                                "heartbeat_timeout"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "video_not_available"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "The video is not available."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/playback-sessions/{session}/heartbeat": {
+            "post": {
+                "operationId": "playback.heartbeat",
+                "description": "\u518d\u751f\u4e2d\u306f `heartbeat_interval`\uff0830\uff09\u79d2\u3054\u3068\u306b\u547c\u3076\u3002`action` \u304c `stop` \u306a\u3089\u518d\u751f\u3092\u6b62\u3081\u308b\uff08`reason`: kicked = \u5225\u306e\u7aef\u672b\u3067\u518d\u751f\u304c\u59cb\u307e\u3063\u305f / expired = \u30cf\u30fc\u30c8\u30d3\u30fc\u30c8\u304c\u9014\u7d76\u3048\u305f / stopped = \u7d42\u4e86\u6e08\u307f\uff09\u3002",
+                "summary": "\u30cf\u30fc\u30c8\u30d3\u30fc\u30c8",
+                "tags": [
+                    "\u52d5\u753b",
+                    "Video"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "action": {
+                                                            "type": "string",
+                                                            "const": "continue"
+                                                        },
+                                                        "reason": {
+                                                            "type": "null"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "action",
+                                                        "reason"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "action": {
+                                                            "type": "string",
+                                                            "const": "stop"
+                                                        },
+                                                        "reason": {
+                                                            "type": "string",
+                                                            "const": "expired"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "action",
+                                                        "reason"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "action": {
+                                                            "type": "string",
+                                                            "const": "stop"
+                                                        },
+                                                        "reason": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "action",
+                                                        "reason"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/playback-sessions/{session}/stop": {
+            "post": {
+                "operationId": "playback.stop",
+                "summary": "\u518d\u751f\u3092\u7d42\u4e86\u3059\u308b",
+                "tags": [
+                    "\u52d5\u753b",
+                    "Video"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "description": "\u30a2\u30d7\u30ea\u306e\u516c\u958bID\uff08\u7ba1\u7406\u753b\u9762\u306e\u30a2\u30d7\u30ea\u6982\u8981\u306b\u8868\u793a\uff09",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "session",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "stopped": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "stopped"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/devices": {
+            "post": {
+                "operationId": "devices.upsert",
+                "description": "`installation_id`\uff08\u30a2\u30d7\u30ea\u304c\u751f\u6210\u3057\u3066\u4fdd\u5b58\u3057\u3066\u304a\u304f UUID\uff09\u3092\u30ad\u30fc\u306b\u767b\u9332\u30fb\u66f4\u65b0\u3059\u308b\u3002\u30a2\u30d7\u30ea\u306e\u8d77\u52d5\u6642\u3068 FCM \u30c8\u30fc\u30af\u30f3\u304c\u5909\u308f\u3063\u305f\u3068\u304d\u306b\u547c\u3076\u3002\n\u30e6\u30fc\u30b6\u30fc\u306e\u30c8\u30fc\u30af\u30f3\uff08Bearer\uff09\u3092\u4ed8\u3051\u3066\u547c\u3076\u3068\u3001\u7aef\u672b\u3092\u305d\u306e\u30e6\u30fc\u30b6\u30fc\u306b\u7d10\u3065\u3051\u308b\u3002\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u3044\u306a\u304f\u3066\u3082\u767b\u9332\u3067\u304d\u308b\u3002",
+                "summary": "\u7aef\u672b\u306e\u767b\u9332\u30fb\u66f4\u65b0",
+                "tags": [
+                    "\u7aef\u672b",
+                    "Device"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "platform": {
+                                        "$ref": "#/components/schemas/Platform"
+                                    },
+                                    "fcm_token": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 512
+                                    },
+                                    "app_version": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 32
+                                    },
+                                    "os_version": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 32
+                                    },
+                                    "locale": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 32
+                                    },
+                                    "timezone": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "push_permission": {
+                                        "anyOf": [
+                                            {
+                                                "$ref": "#/components/schemas/PushPermission"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "installation_id",
+                                    "platform"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/notification-categories": {
+            "get": {
+                "operationId": "categories.index",
+                "summary": "\u901a\u77e5\u30ab\u30c6\u30b4\u30ea\u306e\u4e00\u89a7",
+                "tags": [
+                    "\u7aef\u672b",
+                    "Device"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "default_enabled": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "label",
+                                                    "default_enabled"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me": {
+            "get": {
+                "operationId": "me.show",
+                "summary": "\u81ea\u5206\u306e\u60c5\u5831",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "external_user_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "attributes": {
+                                                    "type": "string"
+                                                },
+                                                "notification_preferences": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "email",
+                                                "external_user_id",
+                                                "name",
+                                                "attributes",
+                                                "notification_preferences",
+                                                "created_at"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me/attributes": {
+            "patch": {
+                "operationId": "me.attributes",
+                "description": "\u30a2\u30d7\u30ea\u304b\u3089\u66f4\u65b0\u304c\u8a31\u53ef\u3055\u308c\u305f\u5c5e\u6027\uff08\u7ba1\u7406\u753b\u9762\u306e\u300c\u30a2\u30d7\u30ea\u304b\u3089\u66f4\u65b0\u53ef\u300d\uff09\u3060\u3051\u3092\u66f4\u65b0\u3067\u304d\u308b\u3002`null` \u3092\u6307\u5b9a\u3057\u305f\u30ad\u30fc\u306f\u524a\u9664\u3059\u308b\u3002",
+                "summary": "\u81ea\u5206\u306e\u5c5e\u6027\u3092\u66f4\u65b0",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "attributes": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "required": [
+                                    "attributes"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "external_user_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "attributes": {
+                                                    "type": "string"
+                                                },
+                                                "notification_preferences": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "email",
+                                                "external_user_id",
+                                                "name",
+                                                "attributes",
+                                                "notification_preferences",
+                                                "created_at"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me/notification-preferences": {
+            "get": {
+                "operationId": "me.preferences",
+                "summary": "\u901a\u77e5\u30ab\u30c6\u30b4\u30ea\u3054\u3068\u306e\u53d7\u4fe1\u8a2d\u5b9a\u3092\u53d6\u5f97",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "enabled": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "label",
+                                                    "enabled"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "me.preferences.update",
+                "description": "\u4f8b: `{\"preferences\": {\"campaign\": false, \"notice\": true}}`",
+                "summary": "\u901a\u77e5\u30ab\u30c6\u30b4\u30ea\u3054\u3068\u306e\u53d7\u4fe1\u8a2d\u5b9a\u3092\u66f4\u65b0",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "preferences": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "boolean"
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "required": [
+                                    "preferences"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "enabled": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "label",
+                                                    "enabled"
+                                                ]
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me/devices/link": {
+            "post": {
+                "operationId": "me.devices.link",
+                "description": "\u30ed\u30b0\u30a4\u30f3\u5f8c\u306b\u547c\u3076\uff08\u30ed\u30b0\u30a4\u30f3 API \u306b `installation_id` \u3092\u6e21\u3057\u305f\u5834\u5408\u306f\u4e0d\u8981\uff09\u3002",
+                "summary": "\u7aef\u672b\u3092\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\u306b\u7d10\u3065\u3051\u308b",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "installation_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "installation_id": {
+                                                    "type": "string"
+                                                },
+                                                "platform": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "ios",
+                                                        "android"
+                                                    ]
+                                                },
+                                                "app_version": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "os_version": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "locale": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "timezone": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "push_permission": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "not_determined",
+                                                        "authorized",
+                                                        "provisional",
+                                                        "denied"
+                                                    ]
+                                                },
+                                                "app_user_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "has_fcm_token": {
+                                                    "type": "boolean"
+                                                },
+                                                "invalidated": {
+                                                    "type": "boolean"
+                                                },
+                                                "last_active_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "installation_id",
+                                                "platform",
+                                                "app_version",
+                                                "os_version",
+                                                "locale",
+                                                "timezone",
+                                                "push_permission",
+                                                "app_user_id",
+                                                "has_fcm_token",
+                                                "invalidated",
+                                                "last_active_at"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "object",
+                                            "properties": {
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "device_not_found"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "Register the device first."
+                                                },
+                                                "details": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "code",
+                                                "message",
+                                                "details"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me/devices/unlink": {
+            "post": {
+                "operationId": "me.devices.unlink",
+                "summary": "\u7aef\u672b\u3068\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\u306e\u7d10\u3065\u3051\u3092\u5916\u3059",
+                "tags": [
+                    "\u81ea\u5206\uff08\u30ed\u30b0\u30a4\u30f3\u30e6\u30fc\u30b6\u30fc\uff09",
+                    "Me"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "installation_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "unlinked": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "unlinked"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/auth/register": {
+            "post": {
+                "operationId": "auth.register",
+                "description": "\u30e1\u30fc\u30eb\u30a2\u30c9\u30ec\u30b9\u3068\u30d1\u30b9\u30ef\u30fc\u30c9\u3067\u767b\u9332\u3057\u3001\u30c8\u30fc\u30af\u30f3\u3092\u767a\u884c\u3059\u308b\u3002`installation_id` \u3092\u6e21\u3059\u3068\u3001\u305d\u306e\u7aef\u672b\u3092\u30e6\u30fc\u30b6\u30fc\u306b\u7d10\u3065\u3051\u308b\u3002",
+                "summary": "\u4f1a\u54e1\u767b\u9332\uff08builtin \u65b9\u5f0f\uff09",
+                "tags": [
+                    "\u8a8d\u8a3c\uff08builtin\uff09",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 191
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "maxLength": 191
+                                    },
+                                    "name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 191
+                                    },
+                                    "installation_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uuid"
+                                    },
+                                    "attributes": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "password"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "const": "Bearer"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "email": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "external_user_id": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "attributes": {
+                                                            "type": "string"
+                                                        },
+                                                        "notification_preferences": {
+                                                            "type": "string"
+                                                        },
+                                                        "created_at": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "email",
+                                                        "external_user_id",
+                                                        "name",
+                                                        "attributes",
+                                                        "notification_preferences",
+                                                        "created_at"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "token_type",
+                                                "expires_at",
+                                                "user"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/auth/login": {
+            "post": {
+                "operationId": "auth.login",
+                "summary": "\u30ed\u30b0\u30a4\u30f3\uff08builtin \u65b9\u5f0f\uff09",
+                "tags": [
+                    "\u8a8d\u8a3c\uff08builtin\uff09",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "installation_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uuid"
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "password"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "const": "Bearer"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "user": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "email": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "external_user_id": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "attributes": {
+                                                            "type": "string"
+                                                        },
+                                                        "notification_preferences": {
+                                                            "type": "string"
+                                                        },
+                                                        "created_at": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "email",
+                                                        "external_user_id",
+                                                        "name",
+                                                        "attributes",
+                                                        "notification_preferences",
+                                                        "created_at"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "token",
+                                                "token_type",
+                                                "expires_at",
+                                                "user"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/auth/password/forgot": {
+            "post": {
+                "operationId": "auth.password.forgot",
+                "description": "\u767b\u9332\u6e08\u307f\u306e\u30e1\u30fc\u30eb\u30a2\u30c9\u30ec\u30b9\u306b\u518d\u8a2d\u5b9a\u30b3\u30fc\u30c9\u3092\u9001\u308b\u3002\u30e1\u30fc\u30eb\u30a2\u30c9\u30ec\u30b9\u304c\u767b\u9332\u3055\u308c\u3066\u3044\u308b\u304b\u3069\u3046\u304b\u306b\u95a2\u308f\u3089\u305a 202 \u3092\u8fd4\u3059\u3002",
+                "summary": "\u30d1\u30b9\u30ef\u30fc\u30c9\u518d\u8a2d\u5b9a\u30b3\u30fc\u30c9\u306e\u9001\u4fe1",
+                "tags": [
+                    "\u8a8d\u8a3c\uff08builtin\uff09",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                },
+                                "required": [
+                                    "email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "sent": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "sent"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/auth/password/reset": {
+            "post": {
+                "operationId": "auth.password.reset",
+                "description": "\u30e1\u30fc\u30eb\u3067\u5c4a\u3044\u305f\u518d\u8a2d\u5b9a\u30b3\u30fc\u30c9\u3067\u65b0\u3057\u3044\u30d1\u30b9\u30ef\u30fc\u30c9\u3092\u8a2d\u5b9a\u3059\u308b\u3002\u6210\u529f\u3059\u308b\u3068\u305d\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u5168\u30c8\u30fc\u30af\u30f3\u304c\u7121\u52b9\u306b\u306a\u308b\u3002",
+                "summary": "\u30d1\u30b9\u30ef\u30fc\u30c9\u306e\u518d\u8a2d\u5b9a",
+                "tags": [
+                    "\u8a8d\u8a3c\uff08builtin\uff09",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "maxLength": 191
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "token",
+                                    "password"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "reset": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "reset"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/auth/logout": {
+            "post": {
+                "operationId": "auth.logout",
+                "description": "\u73fe\u5728\u306e\u30c8\u30fc\u30af\u30f3\u3092\u7121\u52b9\u306b\u3059\u308b\u3002`installation_id` \u3092\u6e21\u3059\u3068\u3001\u305d\u306e\u7aef\u672b\u3068\u30e6\u30fc\u30b6\u30fc\u306e\u7d10\u3065\u3051\u3092\u5916\u3059\uff08builtin / external \u5171\u901a\uff09\u3002",
+                "summary": "\u30ed\u30b0\u30a2\u30a6\u30c8",
+                "tags": [
+                    "\u8a8d\u8a3c\uff08builtin\uff09",
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "installation_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uuid"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "logged_out": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "logged_out"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "userToken": {
+                "type": "http",
+                "description": "\u30a2\u30d7\u30ea\u30e6\u30fc\u30b6\u30fc\u306e\u30c8\u30fc\u30af\u30f3\uff08\u30ed\u30b0\u30a4\u30f3API / \u30c8\u30fc\u30af\u30f3\u767a\u884cAPI\u3067\u53d6\u5f97\uff09",
+                "scheme": "bearer"
+            },
+            "appSecret": {
+                "type": "http",
+                "description": "\u30b5\u30fc\u30d0\u30fc\u9593API\u7528\u306e app_secret\uff08\u7ba1\u7406\u753b\u9762\u3067\u767a\u884c\uff09",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "Platform": {
+                "type": "string",
+                "enum": [
+                    "ios",
+                    "android"
+                ],
+                "title": "Platform"
+            },
+            "PushPermission": {
+                "type": "string",
+                "enum": [
+                    "not_determined",
+                    "authorized",
+                    "provisional",
+                    "denied"
+                ],
+                "title": "PushPermission"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

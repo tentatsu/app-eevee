@@ -170,3 +170,13 @@
 - 基本アップロード（multipart の POST）は 200MB まで。それを超えるファイルは tus（再開可能アップロード）が必要で、今回は未対応（`docs/manual-verification.md` に記載）。
 - 変換完了は Webhook で反映する。Webhook が届かない環境（ローカル開発など）のために「プロバイダから状態を取得」ボタンも用意した。
 - 管理画面で動画を削除すると、Cloudflare 側の動画も削除する。
+
+## D-023 その他の細かな判断
+
+- **日時**: DB はすべて UTC（`config/app.php` の timezone は UTC）。管理画面の表示と入力は「アプリの表示タイムゾーン → 組織のタイムゾーン → `EEVEE_DEFAULT_TIMEZONE`（Asia/Tokyo）」の順に決める（`eevee_dt()` ヘルパー）。API は ISO 8601 の UTC（`Z` 付き）で返す。
+- **Sail の構成**: `sail:install --with=mysql,redis,mailpit` の標準構成（PHP 8.5 ランタイム、MySQL 8.4）に、Horizon とスケジューラーのサービスを追加した（同じイメージで `SUPERVISOR_PHP_COMMAND` を変えて起動）。
+- **テスト DB**: JSON 関数を使うセグメントの SQL を本番と同じ方言で検証するため、テストは SQLite ではなく MySQL（Sail が作る `testing` DB）で実行する。視聴セッションのテストは Redis の DB 14 を使い、各テストの前に空にする。
+- **OpenAPI**: Scramble で生成し、`docs/openapi.json` にコミットしている。`{app_key}` はミドルウェアで解決するためコントローラーの引数にないので、`ApiDocsServiceProvider` でパスパラメータと認証方式（userToken / appSecret）を補正している。API を変更したら `php artisan scramble:export` で再出力する。
+- **管理画面の CSS/JS**: ビルド不要の素の CSS（`public/css/eevee.css`）と、ビューに埋め込んだ少量の JavaScript にした。Vite / npm のビルドなしで Sail を起動してすぐ使えるようにするため。
+- **アプリユーザーの削除**: サーバー間API `DELETE /users/{external_user_id}` でユーザーとトークンを削除する（端末は未ログインの端末として残す）。管理画面からの削除・退会 API は今回は用意していない。
+- **招待**: 有効期限 7 日。同じメールアドレスに再度招待すると古い招待は無効になる。既にアカウントがある人はパスワードを入力して参加する。

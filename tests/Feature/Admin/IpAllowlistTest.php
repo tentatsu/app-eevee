@@ -161,3 +161,10 @@ it('warns the system admin before locking out of /system', function () {
     fromIp('198.51.100.1')->put('/system/ip-allowlist', ['entries' => '192.0.2.0/24', 'confirm_lockout' => 1])->assertRedirect('/system/ip-allowlist');
     fromIp('198.51.100.1')->get('/system')->assertForbidden();
 });
+
+it('does not apply to webhooks', function () {
+    allow($this->org, '203.0.113.0/24');
+    $app = App::factory()->for($this->org)->create();
+    // 署名がないため 401 になる（＝ IP 制限の 403 ではなく Webhook の処理まで到達している）
+    fromIp('198.51.100.1')->postJson("/webhooks/cloudflare/{$app->app_key}", ['uid' => 'x'])->assertUnauthorized()->assertJsonPath('error.code', 'invalid_signature');
+});
