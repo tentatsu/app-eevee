@@ -88,3 +88,22 @@
 - 失敗: `{"error": {"code": "機械が読めるコード", "message": "説明", "details": {...}}}`。バリデーションエラーは `422 validation_failed` で `details.fields` に項目ごとのメッセージ。
 - 主なコード: `app_not_found`, `unauthenticated`, `invalid_credentials`, `invalid_app_secret`, `forbidden`, `not_found`, `validation_failed`, `rate_limited`, `auth_mode_mismatch`, `user_not_found`, `device_not_found`, `invalid_reset_token`, `server_error`（動画・プッシュのコードは各フェーズで追加）。一覧は `docs/client-integration.md`。
 - レート制限: アプリ単位（初期値 6000/分）と IP 単位（300/分）の両方。ログイン系はさらに IP＋メールアドレス単位で 10/分。サーバー間APIはアプリ単位で 1200/分。いずれも `.env` で変更できる。
+
+## D-014 セグメントの属性検索は当面 JSON カラムで行う（EAV・生成カラムの検討）
+
+- **判断**: 属性は `app_users.custom_attributes`（JSON）に保存し、セグメントの条件は `JSON_EXTRACT` ＋ `CAST` の SQL に変換する。条件の値はすべてバインド変数で渡す（SQL インジェクション対策）。
+- **計測**: 10万端末で最大 0.4 秒（`docs/performance.md`）。目標の「数秒以内」を満たすため、当面この方式とする。
+- **将来の選択肢**
+  1. **生成カラム＋インデックス（MySQL の generated column）**: よく使う属性だけ `ALTER TABLE app_users ADD COLUMN attr_gender VARCHAR(32) AS (custom_attributes->>'$.gender') STORED, ADD INDEX (...)`。アプリごとに属性が異なるためマイグレーションを動的に発行する仕組みが必要で、列数に上限がある。少数の「よく使う属性」に限るなら最も手軽。MySQL 8 の multi-valued index / 関数インデックスでも同様のことができる。
+  2. **EAV テーブル**（`app_user_attributes(app_user_id, key, value_string, value_number, value_date)` に `(key, value_*)` のインデックス）: 属性の追加にスキーマ変更が不要で、条件ごとにインデックスが効く。一方、条件の数だけ JOIN / EXISTS が増え、AND/OR の入れ子の SQL が複雑になる。書き込み量も増える。
+  3. **検索エンジンへの同期**（OpenSearch など）: 数百万端末規模で検討。
+  - 移行しやすいように、属性の型変換・SQL 化は `SegmentCompiler::expression()` に閉じ込めてある。生成カラムや EAV に変える場合はここを差し替える。
+
+## D-015 セグメント条件の意味（未ログイン端末・値がない場合）
+
+- セグメントは「端末（devices）に、紐づくユーザー（app_users、未ログインなら NULL）を LEFT JOIN した行」に対して評価する。プッシュの対象数・端末数はこの行数、ユーザー数は重複を除いたログインユーザー数。
+- 属性の条件は「値が存在し、かつ条件を満たす」ときだけ真。`neq`・`not_in` も値がないユーザー・未ログインの端末には一致しない（「値がない」は `not_exists` で明示的に指定する）。SQL の NULL の性質をそのまま使っており、利用者にとって「性別≠女性」に未回答の人が含まれない方が自然と判断した。
+- 通知カテゴリの条件は、ユーザーの設定がなければカテゴリの初期値で判定する（未ログイン端末も初期値）。
+- お知らせの対象判定（ユーザー単位）は「ユーザーの有効な端末のどれか（端末がなければユーザーだけ）で条件を満たせば対象」とする。
+- 日時の入力値はアプリの表示タイムゾーンとして解釈して UTC に変換する。`within_days`・`before_days` は実行時点を基準にする。
+- 入れ子は 5 段まで、条件は 100 個まで。
