@@ -1,0 +1,86 @@
+<?php
+
+namespace App\Providers;
+
+use App\Models\AppUser;
+use App\Support\Tenancy\CurrentMembership;
+use App\Support\Tenancy\TenantContext;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        // リクエスト（ジョブ）ごとにリセットされるテナント文脈
+        $this->app->scoped(TenantContext::class);
+        $this->app->scoped(CurrentMembership::class);
+
+        $this->app->register(EeveeServiceProvider::class);
+    }
+
+    public function boot(): void
+    {
+        Model::preventLazyLoading(! $this->app->isProduction());
+        Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
+
+        Relation::enforceMorphMap([
+            'app_user' => AppUser::class,
+        ]);
+
+        Password::defaults(fn () => Password::min(8));
+
+        $this->defineGates();
+        $this->defineRateLimiters();
+    }
+
+    private function defineGates(): void
+    {
+        $role = fn () => app(CurrentMembership::class)->role();
+
+        Gate::define('manage-organization', fn ($user) => $role()?->canManageOrganization() ?? false);
+        Gate::define('manage-apps', fn ($user) => $role()?->canManageApps() ?? false);
+        Gate::define('edit-content', fn ($user) => $role()?->canEditContent() ?? false);
+        Gate::define('view-audit-logs', fn ($user) => $role()?->canViewAuditLogs() ?? false);
+    }
+
+    private function defineRateLimiters(): void
+    {
+        // アプリ向けAPI: アプリ単位とIP単位
+        RateLimiter::for('app-api', function (Request $request) {
+            $appKey = (string) $request->route('app_key');
+
+            return [
+                Limit::perMinute((int) config('eevee.rate_limits.app_per_minute'))->by('app:'.$appKey),
+                Limit::perMinute((int) config('eevee.rate_limits.ip_per_minute'))->by('ip:'.$request->ip()),
+            ];
+        });
+
+        // ログイン・登録・パスワード再設定（総当たり対策）
+        RateLimiter::for('app-auth', function (Request $request) {
+            $appKey = (string) $request->route('app_key');
+
+            return [
+                Limit::perMinute((int) config('eevee.rate_limits.auth_per_minute'))
+                    ->by('auth:'.$appKey.':'.$request->ip().':'.mb_strtolower((string) $request->input('email'))),
+            ];
+        });
+
+        // サーバー間API: アプリ単位
+        RateLimiter::for('server-api', function (Request $request) {
+            return Limit::perMinute((int) config('eevee.rate_limits.server_per_minute'))
+                ->by('server:'.(string) $request->route('app_key'));
+        });
+
+        // 管理画面のログイン
+        RateLimiter::for('admin-login', function (Request $request) {
+            return Limit::perMinute(10)->by('admin-login:'.$request->ip().':'.mb_strtolower((string) $request->input('email')));
+        });
+    }
+}
