@@ -32,7 +32,9 @@ git clone <this repo> app-eevee && cd app-eevee
 cp .env.example .env
 
 # PHP がローカルにない場合は Docker で依存関係を入れる
-docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html laravelsail/php85-composer:latest composer install
+# （実行環境は sail up 後の PHP 8.5 コンテナ。ここでは依存パッケージを入れるだけなので、拡張のチェックは省く）
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html \
+  laravelsail/php84-composer:latest composer install --ignore-platform-reqs
 
 ./vendor/bin/sail up -d                 # app / mysql / redis / mailpit / horizon / scheduler
 ./vendor/bin/sail artisan key:generate
