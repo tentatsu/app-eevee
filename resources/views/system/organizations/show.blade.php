@@ -1,0 +1,64 @@
+@extends('layouts.system')
+@section('title', $organization->name)
+@section('content')
+<div class="row" style="justify-content:space-between">
+    <h1>{{ $organization->name }} <span class="mono muted">/{{ $organization->slug }}</span></h1>
+    <div class="row">
+        <a class="btn" href="{{ route('system.organizations.edit', $organization) }}">編集</a>
+        @if ($organization->isActive())
+            <form method="post" action="{{ route('system.organizations.suspend', $organization) }}" onsubmit="return confirm('組織を停止しますか？')">@csrf<button class="btn btn-danger">停止</button></form>
+        @else
+            <form method="post" action="{{ route('system.organizations.resume', $organization) }}">@csrf<button class="btn">再開</button></form>
+        @endif
+    </div>
+</div>
+<p>状態: <span @class(['badge', 'badge-danger' => ! $organization->isActive()])>{{ $organization->status->label() }}</span>
+   ／ タイムゾーン: {{ $organization->timezone }} ／ ログインURL: <a class="mono" href="{{ url($organization->slug.'/login') }}">{{ url($organization->slug.'/login') }}</a></p>
+
+<h2>メンバー</h2>
+<div class="card">
+    <table>
+        <tr><th>名前</th><th>メールアドレス</th><th>ロール</th></tr>
+        @forelse ($members as $m)
+            <tr><td>{{ $m->adminUser->name }}</td><td>{{ $m->adminUser->email }}</td><td>{{ $m->role->label() }}</td></tr>
+        @empty
+            <tr><td colspan="3" class="muted">まだメンバーがいません。</td></tr>
+        @endforelse
+    </table>
+    @if ($invitations->isNotEmpty())
+        <p class="muted">招待中: @foreach ($invitations as $i){{ $i->email }}（{{ $i->role->label() }}） @endforeach</p>
+    @endif
+    <form method="post" action="{{ route('system.organizations.invite', $organization) }}" class="row" style="margin-top:12px">
+        @csrf
+        <input type="email" name="email" placeholder="email@example.com" required style="max-width:300px">
+        <select name="role" style="width:auto">
+            @foreach (\App\Enums\OrgRole::options() as $value => $label)
+                <option value="{{ $value }}">{{ $label }}</option>
+            @endforeach
+        </select>
+        <button class="btn btn-primary">管理者を招待</button>
+    </form>
+</div>
+
+<h2>IP制限</h2>
+<div class="card">
+    @if ($ipEntries->isEmpty())
+        <p class="muted">制限なし</p>
+    @else
+        <p>@foreach ($ipEntries as $e)<span class="badge mono">{{ $e->cidr }}</span> @endforeach</p>
+        <form method="post" action="{{ route('system.organizations.ip-allowlist.clear', $organization) }}" onsubmit="return confirm('この組織のIP制限を解除しますか？')">
+            @csrf @method('delete')<button class="btn btn-danger">IP制限を解除</button>
+        </form>
+    @endif
+</div>
+
+<h2>組織の削除</h2>
+<div class="card">
+    <form method="post" action="{{ route('system.organizations.destroy', $organization) }}" class="row">
+        @csrf @method('delete')
+        <input type="text" name="confirm_slug" placeholder="確認のため slug を入力" style="max-width:260px">
+        <button class="btn btn-danger">削除する</button>
+    </form>
+    <p class="hint muted">削除した組織の管理画面・APIは利用できなくなります（データは論理削除）。</p>
+</div>
+@endsection

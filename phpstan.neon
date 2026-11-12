@@ -9,3 +9,5 @@ parameters:
         - database
         - routes
     tmpDir: storage/framework/cache/phpstan
+    # casts() メソッドの戻り値（配列リテラル）からキャスト型を推論する
+    parseModelCastsMethod: true

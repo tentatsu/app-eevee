@@ -83,7 +83,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'system.ip'],
 
     /*
     |--------------------------------------------------------------------------
@@ -206,8 +206,22 @@ return [
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
-            'tries' => 1,
-            'timeout' => 60,
+            'tries' => 3,
+            'timeout' => 120,
+            'nice' => 0,
+        ],
+        // プッシュ配信専用（チャンク送信ジョブ）。リトライ回数はジョブ側で定義する
+        'supervisor-push' => [
+            'connection' => 'redis',
+            'queue' => ['push'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 4,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 0,
+            'timeout' => 300,
             'nice' => 0,
         ],
     ],
@@ -219,11 +233,17 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
+            'supervisor-push' => [
+                'maxProcesses' => 10,
+            ],
         ],
 
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
+            ],
+            'supervisor-push' => [
+                'maxProcesses' => 2,
             ],
         ],
     ],

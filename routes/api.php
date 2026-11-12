@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+/*
+|--------------------------------------------------------------------------
+| アプリ向けAPI /api/v1/apps/{app_key}/... と サーバー間API /api/v1/server/apps/{app_key}/...
+|--------------------------------------------------------------------------
+| IP制限はかけない。
+*/
