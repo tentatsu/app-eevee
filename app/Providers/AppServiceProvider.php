@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Jobs\SendCampaignChunkJob;
 use App\Models\App;
 use App\Models\AppUser;
 use App\Support\Tenancy\CurrentMembership;
@@ -87,6 +88,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('server-api', function (Request $request) {
             return Limit::perMinute((int) config('eevee.rate_limits.server_per_minute'))
                 ->by('server:'.self::appKeyOf($request));
+        });
+
+        // プッシュ送信: アプリごとに 1 秒あたりのチャンク数を制限する
+        RateLimiter::for('push-chunks', function (object $job) {
+            $appId = $job instanceof SendCampaignChunkJob ? $job->appId() : null;
+            $perSecond = $appId !== null ? (int) (App::withoutGlobalScopes()->whereKey($appId)->value('push_rate_per_second') ?: 20) : 20;
+
+            return Limit::perSecond($perSecond)->by('push:'.$appId);
         });
 
         // 管理画面のログイン

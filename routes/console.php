@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// スケジューラー（sail では scheduler サービス、本番では cron で `php artisan schedule:run` を毎分実行）
+Schedule::command('eevee:push:dispatch-scheduled')->everyMinute()->withoutOverlapping();
+Schedule::command('eevee:push:prune-deliveries')->dailyAt('03:30')->onOneServer();
+Schedule::command('eevee:playback:expire')->everyMinute()->withoutOverlapping();
+Schedule::command('horizon:snapshot')->everyFiveMinutes();
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
