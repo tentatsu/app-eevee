@@ -133,3 +133,40 @@
 - 本文は Markdown で保存し、API は Markdown（`body`）と HTML（`body_html`）の両方を返す。HTML は生の HTML タグをエスケープし、`javascript:` などの危険なリンクを無効にする（CommonMark の `html_input=escape`, `allow_unsafe_links=false`）。アプリは WebView で `body_html` を表示するか、ネイティブの Markdown 表示に `body` を使う。
 - セグメント向けの判定はお知らせごとに SQL を1本実行する。公開中のセグメント向けお知らせが数百件を超えるような運用になったら、配信時にユーザーとの対応表を作る方式に変える。
 - 「このお知らせをプッシュ通知する」はプッシュの下書きを作り、編集画面に移動する（即時送信はしない）。data に `type=notice`・`id={お知らせのID}` を自動で入れ、対象（全員／セグメント）もお知らせに合わせる。
+
+## D-018 動画プロバイダの抽象化
+
+- `App\Services\Video\Contracts\VideoProvider` に、アップロード URL の発行・状態取得・署名付き再生の必須化・削除・再生 URL の生成・Webhook の検証と解析を定義した。実装は `CloudflareStreamProvider`。
+- アプリごとに `apps.video_provider` でプロバイダを選び、`config/eevee.php` の `video.providers`（名前 → クラス）で解決する（`VideoProviderManager`）。認証情報はプロバイダごとに `apps.video_provider_settings`（暗号化した JSON）に入れるため、DRM 対応のプロバイダ（Mux など）を追加するときもテーブルの変更は不要。
+- Cloudflare の API 呼び出しは Laravel の HTTP クライアント経由なので、テストでは `Http::fake()` で差し替えている（実際の通信なし）。ローカル開発で Cloudflare を使わない場合は `EEVEE_VIDEO_FAKE=true` で `FakeVideoProvider` に切り替わる。
+
+## D-019 再生トークン
+
+- 再生のたびに Cloudflare の API（`/token`）を呼ばず、アプリに登録した署名鍵（Key ID と RSA 秘密鍵）でサーバー側で JWT（RS256）を作る。ヘッダー `kid`、クレーム `sub`（動画の uid）・`kid`・`exp`・`nbf`（1分前）。
+- 有効期限は「動画の長さ＋余裕時間（アプリ設定、初期値10分）」。長さが分からない場合は 3600 秒とみなす。
+- 秘密鍵は Cloudflare の `POST /stream/keys` が返す `pem`（base64 でエンコードされた PEM）をそのまま貼っても、デコード済みの PEM でもよい。
+- URL は `https://{カスタマーサブドメイン}/{token}/manifest/video.m3u8`（DASH は `video.mpd`）。サブドメイン未設定時は `videodelivery.net`。
+- アップロード時（Direct Creator Upload）に `requireSignedURLs: true` を指定し、さらに Webhook・状態取得で `requireSignedURLs` が false の動画を見つけたら API で true にする（二重の対策）。
+- 署名付き URL の追加の制限（`accessRules` による国や IP の制限）は今回は入れていない。必要なら `CloudflareStreamProvider::playbackUrls()` のクレームに追加する。
+
+## D-020 同時視聴数の制御
+
+- 視聴者は「ログインしていればユーザー、未ログインなら端末（installation_id）」。未ログインで公開動画を再生するときは `installation_id` を必須にした（同時視聴数の単位にするため）。
+- Redis の ZSET（メンバー=セッションID、スコア=最終ハートビートの時刻）で有効なセッションを管理し、「期限切れの除去 → 件数の確認 → 拒否 or 最古の停止 → 追加」を Lua スクリプトで原子的に実行する。同じユーザーが同時に再生を押しても上限を超えない。
+- `kick_oldest` で停止されたセッションは、Redis のセッション状態を `kicked` にし、次のハートビートで `{"action": "stop", "reason": "kicked"}` を返す。アプリは再生を止めて「別の端末で再生が始まりました」と表示する。すでに渡した HLS の URL 自体はトークンの期限まで有効（Cloudflare 側で即時に無効化する仕組みはないため）で、停止はアプリの協力が前提。
+- 90 秒（`EEVEE_VIDEO_HEARTBEAT_TIMEOUT`）ハートビートがないセッションは数えない。DB の統計は、次の再生開始時・ハートビート時・毎分の `eevee:playback:expire` で「期限切れ（終了時刻＝最後のハートビート）」にする。
+- 視聴秒数は、ハートビートの間隔から計算する（1回あたり最大 60 秒。通信が途絶えた時間を数えすぎないため）。
+- 上限超過（拒否・最古の停止）は `playback_limit_events` に記録し、管理画面で動画ごとに件数を表示する。
+- セッション ID は推測できない UUID だが、ハートビート・停止は開始した視聴者本人（同じユーザー、または同じ installation_id）でなければ 404 にする。
+
+## D-021 視聴権限の判定のフック
+
+- `VideoAccessPolicy` インターフェース（`check(App, Video, ?AppUser): AccessDecision`）を `config('eevee.video.access_policies')` に並べ、順に評価する。既定は `DefaultVideoAccessPolicy`（再生可能な状態か、公開期間内か、メンバー限定ならログインしているか）。
+- 将来の有料プラン判定は、例えば `SubscriptionVideoAccessPolicy`（ユーザーの属性 `plan` や外部の課金 API を見る）を作って配列に追加するだけで差し込める。拒否の理由はコード付き（例: `subscription_required`）で API のエラーとして返る。
+
+## D-022 動画のアップロード
+
+- 管理画面で動画の情報を保存した時点で Cloudflare の Direct Creator Upload を発行し（動画の枠ができる）、編集画面のファイル選択からブラウザが直接 `uploadURL` に送信する。app-eevee のサーバーはファイルを受け取らない。
+- 基本アップロード（multipart の POST）は 200MB まで。それを超えるファイルは tus（再開可能アップロード）が必要で、今回は未対応（`docs/manual-verification.md` に記載）。
+- 変換完了は Webhook で反映する。Webhook が届かない環境（ローカル開発など）のために「プロバイダから状態を取得」ボタンも用意した。
+- 管理画面で動画を削除すると、Cloudflare 側の動画も削除する。

@@ -1,5 +1,8 @@
 <?php
 
+use App\Services\Video\Access\DefaultVideoAccessPolicy;
+use App\Services\Video\Cloudflare\CloudflareStreamProvider;
+
 return [
 
     /*
@@ -51,10 +54,12 @@ return [
 
         // アプリごとに選べる動画プロバイダ（apps.video_provider => クラス）
         'providers' => [
+            'cloudflare_stream' => CloudflareStreamProvider::class,
         ],
 
         // 視聴権限の判定（順に評価し、1つでも拒否すれば再生不可）。将来の有料プラン判定はここに追加する。
         'access_policies' => [
+            DefaultVideoAccessPolicy::class,
         ],
     ],
 

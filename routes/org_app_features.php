@@ -17,3 +17,8 @@ Route::post('campaigns/{campaign}/test', [Apps\CampaignController::class, 'sendT
 
 Route::resource('notices', Apps\NoticeController::class)->except(['show']);
 Route::post('notices/{notice}/push', [Apps\NoticeController::class, 'push'])->name('notices.push');
+
+Route::resource('videos', Apps\VideoController::class)->except(['show']);
+Route::post('videos/{video}/upload-url', [Apps\VideoController::class, 'uploadUrl'])->name('videos.upload-url');
+Route::post('videos/{video}/uploaded', [Apps\VideoController::class, 'uploaded'])->name('videos.uploaded');
+Route::post('videos/{video}/refresh', [Apps\VideoController::class, 'refresh'])->name('videos.refresh');
