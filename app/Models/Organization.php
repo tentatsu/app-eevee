@@ -20,18 +20,21 @@ class Organization extends Model
         'system', 'api', 'login', 'logout', 'admin', 'webhooks', 'health', 'up',
         'assets', 'storage', 'css', 'js', 'build', 'vendor', 'horizon', 'docs',
         'sanctum', 'livewire', 'broadcasting', 'favicon.ico', 'robots.txt',
-        'invitations', 'password', 'register', 'static', 'public', 'www', 'mail',
+        'invitations', 'password', 'register', 'static', 'public', 'www', 'mail', 'billing',
     ];
 
     /** slug の書式（英小文字・数字・ハイフン、3〜32文字、先頭末尾は英数字） */
     public const SLUG_PATTERN = '[a-z0-9](?:[a-z0-9-]{1,30})[a-z0-9]';
 
-    protected $fillable = ['slug', 'name', 'status', 'timezone'];
+    protected $fillable = ['slug', 'name', 'status', 'timezone', 'stripe_account_id', 'stripe_charges_enabled', 'stripe_details_submitted', 'application_fee_percent'];
 
     protected function casts(): array
     {
         return [
             'status' => OrganizationStatus::class,
+            'stripe_charges_enabled' => 'boolean',
+            'stripe_details_submitted' => 'boolean',
+            'application_fee_percent' => 'float',
         ];
     }
 

@@ -15,3 +15,5 @@ Route::get('videos/{video}', [Api\VideoController::class, 'show'])->whereNumber(
 Route::post('videos/{video}/play', [Api\VideoController::class, 'play'])->whereNumber('video')->name('videos.play');
 Route::post('playback-sessions/{session}/heartbeat', [Api\VideoController::class, 'heartbeat'])->name('playback.heartbeat');
 Route::post('playback-sessions/{session}/stop', [Api\VideoController::class, 'stop'])->name('playback.stop');
+
+Route::get('billing/plans', [Api\BillingController::class, 'plans'])->name('billing.plans');

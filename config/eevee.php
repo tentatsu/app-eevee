@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Video\Access\DefaultVideoAccessPolicy;
+use App\Services\Video\Access\EntitlementVideoAccessPolicy;
 use App\Services\Video\Cloudflare\CloudflareStreamProvider;
 
 return [
@@ -67,10 +68,19 @@ return [
             'cloudflare_stream' => CloudflareStreamProvider::class,
         ],
 
-        // 視聴権限の判定（順に評価し、1つでも拒否すれば再生不可）。将来の有料プラン判定はここに追加する。
+        // 視聴権限の判定（順に評価し、1つでも拒否すれば再生不可）
         'access_policies' => [
             DefaultVideoAccessPolicy::class,
+            EntitlementVideoAccessPolicy::class,
         ],
+    ],
+
+    /*
+    | 課金（Stripe Connect）。プラットフォームのキーはシステム管理画面で登録する（DB に暗号化して保存）。
+    */
+    'billing' => [
+        // プラットフォームの手数料（%）の既定値。システム管理画面で変更できる
+        'default_fee_percent' => (float) env('EEVEE_BILLING_FEE_PERCENT', 10),
     ],
 
 ];

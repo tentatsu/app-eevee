@@ -24,6 +24,7 @@
             <div class="nav-section">組織</div>
             @can('manage-organization')
                 <x-nav-link :href="route('org.members.index', $org)" icon="team" :active="request()->routeIs('org.members.*')">メンバー</x-nav-link>
+                <x-nav-link :href="route('org.billing.show', $org)" icon="card" :active="request()->routeIs('org.billing.*')">売上の受け取り</x-nav-link>
                 <x-nav-link :href="route('org.ip-allowlist.edit', $org)" icon="shield" :active="request()->routeIs('org.ip-allowlist.*')">IP制限</x-nav-link>
             @endcan
             @can('view-audit-logs')

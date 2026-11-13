@@ -13,7 +13,7 @@
                 <td>@if ($thumbs[$v->id] ?? null)<img src="{{ $thumbs[$v->id] }}" alt="" class="thumb">@else<div class="thumb thumb-empty">{{ $v->status->value === 'ready' ? '—' : $v->status->label() }}</div>@endif</td>
                 <td><a href="{{ route('org.apps.videos.edit', [$organization, $app, $v]) }}">{{ $v->title }}</a>@if($v->category)<div class="muted">{{ $v->category }}</div>@endif</td>
                 <td><span @class(['badge', 'badge-ok' => $v->status->value === 'ready', 'badge-danger' => $v->status->value === 'error', 'badge-muted' => in_array($v->status->value, ['pending_upload', 'processing'])])>{{ $v->status->label() }}</span></td>
-                <td>{{ $v->visibility->label() }}</td>
+                <td>{{ $v->visibility->label() }}@if ($v->required_entitlement) <span class="badge mono" title="有料">{{ $v->required_entitlement }}</span>@endif</td>
                 <td>{{ $v->duration_seconds ? gmdate($v->duration_seconds >= 3600 ? 'H:i:s' : 'i:s', $v->duration_seconds) : '—' }}</td>
                 <td>{{ $v->sort_order }}</td>
                 <td>{{ number_format($s['plays']) }}</td>

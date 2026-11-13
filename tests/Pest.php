@@ -31,3 +31,13 @@ function actingAsSystemAdmin(): SystemAdmin
 
     return $admin;
 }
+
+/**
+ * Cloudflare Stream の Webhook の署名ヘッダー。
+ */
+function signedWebhook(string $body, string $secret, ?int $time = null): array
+{
+    $time ??= time();
+
+    return ['Webhook-Signature' => 'time='.$time.',sig1='.hash_hmac('sha256', $time.'.'.$body, $secret), 'Content-Type' => 'application/json'];
+}

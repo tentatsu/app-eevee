@@ -6,6 +6,7 @@ use App\Enums\AttributeType;
 use App\Enums\Platform;
 use App\Models\App;
 use App\Models\AttributeDefinition;
+use App\Models\BillingPlan;
 use App\Models\NotificationCategory;
 
 /**
@@ -15,6 +16,7 @@ use App\Models\NotificationCategory;
  * - device.*        : 端末側の条件（platform / app_version / last_active_at / locale）
  * - user.*          : ログイン有無、登録日時、最終ログイン日時
  * - category.{key}  : 通知カテゴリのオン・オフ
+ * - entitlement.{key} : 有料プランの権利を持っているか（課金）
  */
 class SegmentFieldCatalog
 {
@@ -54,6 +56,11 @@ class SegmentFieldCatalog
         $categories = NotificationCategory::withoutGlobalScopes()->where('app_id', $app->id)->orderBy('sort_order')->orderBy('id')->get();
         foreach ($categories as $cat) {
             $fields['category.'.$cat->key] = new SegmentField('category.'.$cat->key, '通知カテゴリ: '.$cat->label, SegmentField::TYPE_CATEGORY, 'category', 'u.notification_preferences', $cat->key, $cat->default_enabled);
+        }
+
+        $entitlements = BillingPlan::withoutGlobalScopes()->where('app_id', $app->id)->distinct()->orderBy('entitlement')->pluck('entitlement');
+        foreach ($entitlements as $entitlement) {
+            $fields['entitlement.'.$entitlement] = new SegmentField('entitlement.'.$entitlement, '課金: 「'.$entitlement.'」の権利がある', SegmentField::TYPE_BOOL, 'entitlement', 'u.id', (string) $entitlement);
         }
 
         return $this->cache[$app->id] = $fields;

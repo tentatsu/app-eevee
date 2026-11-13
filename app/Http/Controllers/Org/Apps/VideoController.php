@@ -6,6 +6,7 @@ use App\Enums\VideoStatus;
 use App\Enums\VideoVisibility;
 use App\Http\Controllers\Controller;
 use App\Models\App;
+use App\Models\BillingPlan;
 use App\Models\Organization;
 use App\Models\Video;
 use App\Services\Audit\AuditLogger;
@@ -200,6 +201,7 @@ class VideoController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:-100000', 'max:100000'],
             'category' => ['nullable', 'string', 'max:64'],
             'tags' => ['nullable', 'string', 'max:1000'],
+            'required_entitlement' => ['nullable', 'string', 'regex:'.BillingPlan::ENTITLEMENT_PATTERN],
         ]);
         $tz = $app->displayTimezone();
         $parse = fn (?string $v) => $v ? CarbonImmutable::createFromFormat('Y-m-d\TH:i', $v, $tz)?->utc() : null;
@@ -215,6 +217,7 @@ class VideoController extends Controller
             'sort_order' => (int) ($data['sort_order'] ?? 0),
             'category' => $data['category'] ?? null,
             'tags' => $tags === [] ? null : $tags,
+            'required_entitlement' => $data['required_entitlement'] ?? null,
         ];
     }
 }

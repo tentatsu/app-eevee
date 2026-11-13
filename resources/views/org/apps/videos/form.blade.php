@@ -79,6 +79,11 @@
             <select name="visibility" style="max-width:320px">
                 @foreach (\App\Enums\VideoVisibility::cases() as $v)<option value="{{ $v->value }}" @selected(old('visibility', $video->visibility?->value) === $v->value)>{{ $v->label() }}</option>@endforeach
             </select></div>
+        @php $entitlementOptions = \App\Models\BillingPlan::query()->distinct()->orderBy('entitlement')->pluck('entitlement'); @endphp
+        <div class="form-row"><label>有料（この権利を持つユーザーだけが再生できる。空欄なら無料）</label>
+            <input type="text" name="required_entitlement" value="{{ old('required_entitlement', $video->required_entitlement) }}" list="entitlement-options" pattern="[a-z][a-z0-9_]*" placeholder="{{ $entitlementOptions->first() ?? 'premium' }}" style="max-width:240px">
+            <datalist id="entitlement-options">@foreach ($entitlementOptions as $e)<option value="{{ $e }}">@endforeach</datalist>
+            <p class="hint muted">「課金プラン」で作ったプランの権利を指定します。一覧には表示され、アプリは「有料プランが必要」と案内できます。</p></div>
         <div class="row">
             <div class="form-row"><label>公開開始（{{ $app->displayTimezone() }}）</label><input type="datetime-local" name="publish_start_at" value="{{ old('publish_start_at', eevee_input_dt($video->publish_start_at)) }}"></div>
             <div class="form-row"><label>公開終了</label><input type="datetime-local" name="publish_end_at" value="{{ old('publish_end_at', eevee_input_dt($video->publish_end_at)) }}"></div>

@@ -4,6 +4,7 @@ namespace App\Services\Segments;
 
 use App\Models\App;
 use App\Models\Device;
+use App\Models\Subscription;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\ValidationException;
@@ -172,6 +173,20 @@ class SegmentCompiler
             }
 
             return [$want ? 'u.id IS NOT NULL' : 'u.id IS NULL', []];
+        }
+
+        if ($field->kind === 'entitlement') {
+            // 有効な購読があるか。未ログイン（u が NULL）は権利なし
+            $want = match ($operator) {
+                'exists' => true,
+                'not_exists' => false,
+                'neq' => ! (bool) ($values[0] ?? true),
+                default => (bool) ($values[0] ?? true),
+            };
+            $statuses = implode(', ', array_fill(0, count(Subscription::ENTITLED_STATUSES), '?'));
+            $sql = "EXISTS (SELECT 1 FROM subscriptions s WHERE s.app_user_id = u.id AND s.entitlement = ? AND s.status IN ({$statuses}) AND (s.current_period_end IS NULL OR s.current_period_end > ?))";
+
+            return [$want ? $sql : "NOT {$sql}", array_merge([(string) $field->key], Subscription::ENTITLED_STATUSES, [now()->toDateTimeString()])];
         }
 
         if ($field->kind === 'category') {

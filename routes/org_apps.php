@@ -37,5 +37,11 @@ Route::prefix('apps/{app}')->where(['app' => '[0-9]+'])->middleware('org.app')->
     Route::get('devices', [Apps\DeviceController::class, 'index'])->name('devices.index');
     Route::put('devices/{device}/test', [Apps\DeviceController::class, 'updateTest'])->name('devices.test');
 
+    Route::get('billing', [Apps\BillingPlanController::class, 'index'])->name('billing.index');
+    Route::middleware('can:manage-apps')->group(function () {
+        Route::post('billing/plans', [Apps\BillingPlanController::class, 'store'])->name('billing.plans.store');
+        Route::put('billing/plans/{plan}', [Apps\BillingPlanController::class, 'update'])->whereNumber('plan')->name('billing.plans.update');
+    });
+
     require __DIR__.'/org_app_features.php';
 });

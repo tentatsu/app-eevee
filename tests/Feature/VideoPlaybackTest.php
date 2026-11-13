@@ -250,13 +250,6 @@ it('lists videos with playable flags and filters', function () {
 | Webhook
 */
 
-function signedWebhook(string $body, string $secret, ?int $time = null): array
-{
-    $time ??= time();
-
-    return ['Webhook-Signature' => 'time='.$time.',sig1='.hash_hmac('sha256', $time.'.'.$body, $secret), 'Content-Type' => 'application/json'];
-}
-
 it('verifies the webhook signature and updates the video status and duration', function () {
     Http::fake();
     $this->video->update(['status' => VideoStatus::Processing, 'duration_seconds' => null]);

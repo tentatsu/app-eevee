@@ -33,7 +33,7 @@ final class SegmentField
     ];
 
     /**
-     * @param  'attribute'|'column'|'logged_in'|'category'  $kind
+     * @param  'attribute'|'column'|'logged_in'|'category'|'entitlement'  $kind
      * @param  list<string>|null  $choices
      */
     public function __construct(

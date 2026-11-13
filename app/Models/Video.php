@@ -18,7 +18,7 @@ class Video extends Model
 
     protected $fillable = [
         'app_id', 'provider', 'provider_video_id', 'title', 'description', 'thumbnail_url',
-        'duration_seconds', 'status', 'status_message', 'visibility', 'publish_start_at',
+        'duration_seconds', 'status', 'status_message', 'visibility', 'required_entitlement', 'publish_start_at',
         'publish_end_at', 'sort_order', 'category', 'tags',
     ];
 
@@ -82,6 +82,7 @@ class Video extends Model
             'thumbnail_url' => $this->thumbnail_url,
             'duration_seconds' => $this->duration_seconds,
             'visibility' => $this->visibility->value,
+            'required_entitlement' => $this->required_entitlement,
             'category' => $this->category,
             'tags' => $this->tags ?? [],
             'sort_order' => $this->sort_order,

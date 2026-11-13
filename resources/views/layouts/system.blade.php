@@ -14,6 +14,7 @@
         <x-nav-link :href="route('system.usage')" icon="chart" :active="request()->routeIs('system.usage')">利用量</x-nav-link>
         <x-nav-link :href="route('system.audit-logs')" icon="doc" :active="request()->routeIs('system.audit-logs')">監査ログ</x-nav-link>
         <div class="nav-section">共用のアカウント</div>
+        <x-nav-link :href="route('system.billing.edit')" icon="card" :active="request()->routeIs('system.billing.*')">課金（Stripe）</x-nav-link>
         <x-nav-link :href="route('system.provider-accounts.index')" icon="video" :active="request()->routeIs('system.provider-accounts.*')">動画（Cloudflare）</x-nav-link>
         <div class="nav-section">ツール</div>
         @if (config('eevee.horizon.enabled'))

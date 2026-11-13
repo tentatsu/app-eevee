@@ -18,6 +18,8 @@
 | プッシュ配信 | FCM HTTP v1、500 件チャンクのキュー送信、レート制御・指数バックオフ、冪等性、テスト配信、予約、配信ログ、開封率 |
 | お知らせ | Markdown、公開期間、全員／セグメント、ピン留め、既読・未読数、プッシュ連携 |
 | 動画配信 | Cloudflare Stream（Direct Creator Upload、署名付き URL 必須、Webhook）、RS256 の再生トークン、ハートビート、同時視聴数の制御、統計 |
+| 課金 | Stripe Connect（Express）。組織ごとの連結アカウント、月額・年額のプラン、Checkout・カスタマーポータル、Webhook での購読の同期、権利（entitlement）による有料動画・セグメント、プラットフォームの手数料 |
+| 共用のアカウント | Oneframe が用意する Cloudflare Stream のアカウントを複数のアプリで共用（システム管理者が割り当て）、アプリごとの利用量 |
 
 対象外（後から追加できる構造にしている）: 記事、DRM、課金、アプリ側の SDK。
 
@@ -102,7 +104,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | ファイル | 内容 |
 |---|---|
 | [docs/decisions.md](docs/decisions.md) | 設計判断の記録（判断・理由・代替案） |
-| [docs/client-integration.md](docs/client-integration.md) | アプリへの組み込み手順（FCM 設定、端末登録、ログイン、開封記録、動画再生） |
+| [docs/client-integration.md](docs/client-integration.md) | アプリへの組み込み手順（FCM 設定、端末登録、ログイン、開封記録、動画再生、有料プラン） |
 | [docs/openapi.json](docs/openapi.json) | アプリ向けAPI・サーバー間APIの OpenAPI 3.1 仕様書 |
 | [docs/manual-verification.md](docs/manual-verification.md) | 実際の FCM・Cloudflare での動作確認手順 |
 | [docs/deployment.md](docs/deployment.md) | Laravel Cloud へのデプロイ、TrustProxies、運用（VPS・AWS の場合も） |

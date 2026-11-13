@@ -38,6 +38,7 @@
         <div class="nav-group-items">
             <x-nav-link :href="route('org.apps.users.index', [$org, $app])" icon="users" :sub="true" :active="request()->routeIs('org.apps.users.*')">アプリユーザー</x-nav-link>
             <x-nav-link :href="route('org.apps.devices.index', [$org, $app])" icon="phone" :sub="true" :active="request()->routeIs('org.apps.devices.*')">端末</x-nav-link>
+            <x-nav-link :href="route('org.apps.billing.index', [$org, $app])" icon="card" :sub="true" :active="request()->routeIs('org.apps.billing.*')">課金プラン</x-nav-link>
         </div>
     </div>
 

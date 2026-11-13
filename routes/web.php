@@ -35,6 +35,9 @@ Route::prefix('system')->name('system.')->middleware('system.ip')->group(functio
         Route::put('ip-allowlist', [System\IpAllowlistController::class, 'update'])->name('ip-allowlist.update');
         Route::get('audit-logs', [System\AuditLogController::class, 'index'])->name('audit-logs');
         Route::get('usage', [System\UsageController::class, 'index'])->name('usage');
+        Route::get('billing', [System\BillingController::class, 'edit'])->name('billing.edit');
+        Route::put('billing', [System\BillingController::class, 'update'])->name('billing.update');
+        Route::put('organizations/{organization}/billing', [System\BillingController::class, 'updateOrganization'])->name('organizations.billing');
 
         Route::resource('provider-accounts', System\ProviderAccountController::class)->except(['show']);
         Route::post('provider-accounts/{provider_account}/provision', [System\ProviderAccountController::class, 'provision'])->name('provider-accounts.provision');
@@ -43,6 +46,10 @@ Route::prefix('system')->name('system.')->middleware('system.ip')->group(functio
 });
 
 Route::view('/', 'home')->name('home');
+
+// 購入（Stripe Checkout）のあとに戻るページ。アプリに戻ってもらう
+Route::get('billing/{app_key}/complete', fn () => view('billing.return', ['ok' => true]))->where('app_key', 'ak_[a-z0-9]+')->name('billing.complete');
+Route::get('billing/{app_key}/canceled', fn () => view('billing.return', ['ok' => false]))->where('app_key', 'ak_[a-z0-9]+')->name('billing.canceled');
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +80,12 @@ Route::prefix('{organization}')
                 Route::delete('members/invitations/{invitation}', [Org\MemberController::class, 'revokeInvitation'])->name('members.invitations.destroy');
                 Route::put('members/{member}', [Org\MemberController::class, 'update'])->name('members.update');
                 Route::delete('members/{member}', [Org\MemberController::class, 'destroy'])->name('members.destroy');
+
+                Route::get('billing', [Org\BillingController::class, 'show'])->name('billing.show');
+                Route::post('billing/connect', [Org\BillingController::class, 'connect'])->name('billing.connect');
+                Route::get('billing/return', [Org\BillingController::class, 'return'])->name('billing.return');
+                Route::get('billing/refresh', [Org\BillingController::class, 'connect'])->name('billing.refresh');
+                Route::post('billing/dashboard', [Org\BillingController::class, 'dashboard'])->name('billing.dashboard');
 
                 Route::get('ip-allowlist', [Org\IpAllowlistController::class, 'edit'])->name('ip-allowlist.edit');
                 Route::put('ip-allowlist', [Org\IpAllowlistController::class, 'update'])->name('ip-allowlist.update');

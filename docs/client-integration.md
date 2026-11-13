@@ -126,7 +126,8 @@ GET  /notices/unread-count            未読数（ログイン必須。バッジ
 ## 7. 動画の再生とハートビート
 
 ```
-[一覧] GET /videos                     → playable が false ならログインを促す
+[一覧] GET /videos                     → playable が false なら locked_reason を見て案内する
+   │                                        login_required → ログインを促す / entitlement_required → 有料プランを案内（8 章）
    │
 [再生] POST /videos/{id}/play          → session_id, hls_url, heartbeat_interval(30)
    │     未ログインで公開動画を見る場合は {"installation_id": "..."} を送る
@@ -146,7 +147,28 @@ GET  /notices/unread-count            未読数（ログイン必須。バッジ
 - アプリがバックグラウンドに入って再生を止めたら `stop` を呼ぶか、ハートビートを止めてください（90 秒後に自動で期限切れになり、同時視聴数の枠が空きます）。
 - 同時視聴数の上限（初期値 2）と、上限を超えたときの挙動（新しい再生を拒否 / 最も古い再生を停止）はアプリごとに管理画面で設定します。
 
-## 8. エラーコード一覧（主なもの）
+## 8. 有料プラン（課金・Stripe）
+
+組織が「売上の受け取り」で Stripe に登録し、アプリの「課金プラン」でプランを作ると使えます。購入は Stripe の購入画面（Checkout）で行うため、アプリはカード情報を扱いません。
+
+```
+[プラン] GET /billing/plans            → id, name, price_label（例: 500円 / 月）, entitlement, subscribed
+   │
+[購入] POST /billing/checkout {"plan_id": 1}   （ログイン必須）→ {"url": "https://checkout.stripe.com/..."}
+   │     url を Custom Tabs（Android）/ SFSafariViewController（iOS）で開く
+   │     購入後は完了ページ（success_url を指定すればそこ）に戻る → アプリに戻ってもらう
+   │
+[確認] GET /me/entitlements            → {"entitlements": ["premium"], "subscriptions": [...]}
+   │     反映は Webhook 経由なので数秒かかることがある。アプリに戻ったとき（onResume）に取り直す
+   │
+[管理] POST /billing/portal            → {"url": ...}  解約・カードの変更・領収書（Stripe の画面）
+```
+
+- 動画の `required_entitlement`（例: `premium`）と、自分の `entitlements` を照らし合わせて「有料」バッジを出せます。再生できるかどうかは `playable` / `locked_reason` を見てください（判定はサーバーで行います）。
+- 解約しても、支払い済みの期間の終わり（`current_period_end`）までは見られます。
+- **ストアの規約に注意**: アプリ内で見るデジタルコンテンツ（動画の見放題など）を、アプリ内から外部の決済に誘導して販売することは、App Store / Google Play の規約で原則として認められていません（アプリ内課金が必要）。地域・条件によって例外があります（日本のスマホ新法など）。Stripe の購入画面は、Web サイトでの販売、物販・サービスの予約、規約上認められた地域・条件での利用を想定してください。ストアの審査の可否は、各アプリで確認してください。
+
+## 9. エラーコード一覧（主なもの）
 
 | HTTP | code | 意味・アプリの対応 |
 |---|---|---|
@@ -160,7 +182,12 @@ GET  /notices/unread-count            未読数（ログイン必須。バッジ
 | 404 | `delivery_not_found` | 開封記録の対象が見つからない（無視してよい） |
 | 404 | `notice_not_found` | お知らせが非公開・対象外 |
 | 404 | `video_not_available` | 動画が非公開・変換中・期間外 |
-| 401 | `login_required` | メンバー限定の動画 |
+| 401 | `login_required` | メンバー限定・有料の動画（ログインが必要） |
+| 403 | `entitlement_required` | 有料の動画（プランの購入が必要） |
+| 404 | `plan_not_found` | プランが販売停止・存在しない |
+| 409 | `already_subscribed` | 同じ権利のプランを購読中 |
+| 404 | `no_subscription` | 購読がない（管理画面の URL を作れない） |
+| 503 | `billing_unavailable` | 決済の準備ができていない（運用担当に連絡） |
 | 422 | `installation_id_required` | 未ログインの再生で installation_id がない |
 | 409 | `concurrent_limit_exceeded` | 同時視聴数の上限（`details.max_concurrent_streams`） |
 | 404 | `session_not_found` | 視聴セッションが見つからない（別の視聴者のセッションなど） |

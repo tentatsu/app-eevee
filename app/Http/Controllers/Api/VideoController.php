@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\VideoVisibility;
 use App\Models\AppUser;
 use App\Models\PlaybackSession;
 use App\Models\Video;
@@ -176,10 +175,14 @@ class VideoController extends ApiController
      */
     private function toArray(Video $video, ?AppUser $user): array
     {
+        $decision = $this->gate->check($this->currentApp(), $video, $user);
+
         return array_merge($video->toApiArray(), [
             // 管理画面で指定したサムネイル、なければ動画プロバイダが自動で作ったもの（署名付き）
             'thumbnail_url' => $this->thumbnails->url($this->currentApp(), $video),
-            'playable' => $video->visibility === VideoVisibility::Public || $user !== null,
+            'playable' => $decision->allowed,
+            // 再生できない理由: login_required（ログインが必要）/ entitlement_required（有料プランが必要）
+            'locked_reason' => $decision->allowed ? null : $decision->code,
         ]);
     }
 }

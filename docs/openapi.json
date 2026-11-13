@@ -1148,8 +1148,100 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {}
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "thumbnail_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "\u7ba1\u7406\u753b\u9762\u3067\u6307\u5b9a\u3057\u305f\u30b5\u30e0\u30cd\u30a4\u30eb\u3001\u306a\u3051\u308c\u3070\u52d5\u753b\u30d7\u30ed\u30d0\u30a4\u30c0\u304c\u81ea\u52d5\u3067\u4f5c\u3063\u305f\u3082\u306e\uff08\u7f72\u540d\u4ed8\u304d\uff09"
+                                                },
+                                                "duration_seconds": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "visibility": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "public",
+                                                        "members"
+                                                    ]
+                                                },
+                                                "required_entitlement": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "category": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "tags": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer"
+                                                },
+                                                "publish_start_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "publish_end_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "playable": {
+                                                    "type": "boolean"
+                                                },
+                                                "locked_reason": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "description": "\u518d\u751f\u3067\u304d\u306a\u3044\u7406\u7531: login_required\uff08\u30ed\u30b0\u30a4\u30f3\u304c\u5fc5\u8981\uff09/ entitlement_required\uff08\u6709\u6599\u30d7\u30e9\u30f3\u304c\u5fc5\u8981\uff09"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "title",
+                                                "description",
+                                                "thumbnail_url",
+                                                "duration_seconds",
+                                                "visibility",
+                                                "required_entitlement",
+                                                "category",
+                                                "tags",
+                                                "sort_order",
+                                                "publish_start_at",
+                                                "publish_end_at",
+                                                "playable",
+                                                "locked_reason"
+                                            ]
                                         },
                                         "meta": {
                                             "type": "string"
@@ -2902,6 +2994,368 @@
                                             },
                                             "required": [
                                                 "logged_out"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/billing/plans": {
+            "get": {
+                "operationId": "billing.plans",
+                "description": "\u7d44\u7e54\u304c Stripe \u3067\u306e\u6c7a\u6e08\u3092\u53d7\u3051\u4ed8\u3051\u3089\u308c\u306a\u3044\u9593\u306f\u7a7a\u306b\u306a\u308b\u3002\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u3044\u308c\u3070\u3001\u5404\u30d7\u30e9\u30f3\u3092\u8cfc\u8aad\u4e2d\u304b\uff08`subscribed`\uff09\u3082\u8fd4\u3059\u3002",
+                "summary": "\u8cfc\u5165\u3067\u304d\u308b\u30d7\u30e9\u30f3\u306e\u4e00\u89a7",
+                "tags": [
+                    "\u8ab2\u91d1",
+                    "Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "meta"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "minItems": 0,
+                                                    "maxItems": 0
+                                                },
+                                                "meta": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "meta"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/me/entitlements": {
+            "get": {
+                "operationId": "me.entitlements",
+                "description": "`entitlements` \u306f\u4eca\u6709\u52b9\u306a\u6a29\u5229\uff08\u4f8b: `[\"premium\"]`\uff09\u3002\u52d5\u753b\u306e `required_entitlement` \u3068\u7167\u3089\u3057\u5408\u308f\u305b\u3066\u4f7f\u3046\u3002",
+                "summary": "\u81ea\u5206\u306e\u6a29\u5229\u3068\u8cfc\u8aad",
+                "tags": [
+                    "\u8ab2\u91d1",
+                    "Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "entitlements": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "subscriptions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "plan_id": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "entitlement": {
+                                                                "type": "string"
+                                                            },
+                                                            "status": {
+                                                                "type": "string"
+                                                            },
+                                                            "is_active": {
+                                                                "type": "boolean"
+                                                            },
+                                                            "current_period_end": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "cancel_at_period_end": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "plan_id",
+                                                            "entitlement",
+                                                            "status",
+                                                            "is_active",
+                                                            "current_period_end",
+                                                            "cancel_at_period_end"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "entitlements",
+                                                "subscriptions"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/billing/checkout": {
+            "post": {
+                "operationId": "billing.checkout",
+                "description": "\u8fd4\u3063\u305f `url` \u3092\u30d6\u30e9\u30a6\u30b6\uff08Custom Tabs / SFSafariViewController\uff09\u3067\u958b\u304f\u3002\u8cfc\u5165\u304c\u7d42\u308f\u308b\u3068 `success_url`\uff08\u7701\u7565\u6642\u306f\u5b8c\u4e86\u30da\u30fc\u30b8\uff09\u306b\u623b\u308b\u3002\n\u6a29\u5229\u306e\u53cd\u6620\u306f Webhook \u7d4c\u7531\u306a\u306e\u3067\u3001\u623b\u3063\u305f\u3089 `GET /me/entitlements` \u3067\u78ba\u8a8d\u3059\u308b\uff08\u6570\u79d2\u304b\u304b\u308b\u3053\u3068\u304c\u3042\u308b\uff09\u3002",
+                "summary": "\u8cfc\u5165\u753b\u9762\uff08Stripe Checkout\uff09\u306e URL \u3092\u4f5c\u308b",
+                "tags": [
+                    "\u8ab2\u91d1",
+                    "Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "plan_id": {
+                                        "type": "integer"
+                                    },
+                                    "success_url": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uri",
+                                        "maxLength": 2000
+                                    },
+                                    "cancel_url": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uri",
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "required": [
+                                    "plan_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "url"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": [
+                    {
+                        "userToken": []
+                    }
+                ]
+            }
+        },
+        "/apps/{app_key}/billing/portal": {
+            "post": {
+                "operationId": "billing.portal",
+                "summary": "\u8cfc\u8aad\u306e\u7ba1\u7406\u753b\u9762\uff08\u89e3\u7d04\u30fb\u30ab\u30fc\u30c9\u306e\u5909\u66f4\u30fb\u9818\u53ce\u66f8\uff09\u306e URL \u3092\u4f5c\u308b",
+                "tags": [
+                    "\u8ab2\u91d1",
+                    "Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "app_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "return_url": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "uri",
+                                        "maxLength": 2000
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "url"
                                             ]
                                         },
                                         "meta": {
