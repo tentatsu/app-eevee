@@ -55,7 +55,7 @@ Firebase と Cloudflare の認証情報は `.env` ではなく、**管理画面 
 ### 2-1. Cloudflare 側の準備
 1. Cloudflare のアカウントで **Stream を有効にする**（有料。保存した動画の分数と配信した分数で課金）。
 2. **Account ID**: Cloudflare ダッシュボードの右側（またはアカウントのホーム）に表示。
-3. **API Token**: My Profile → API Tokens → Create Token → Custom token。権限は `Account / Stream / Edit`、対象は使うアカウント。
+3. **API Token**: My Profile → API Tokens → Create Token → Custom token。権限は **`Media` › `Stream` › `Edit`**（以前の画面では `Account` › `Stream` › `Edit`）、対象は使うアカウント。
 
 ### 2-2. app-eevee への登録（自動設定）
 1. 管理画面 → アプリ設定 → 動画プロバイダ に Account ID と API Token を入れて保存。

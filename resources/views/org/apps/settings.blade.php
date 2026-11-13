@@ -73,7 +73,7 @@
 
 <h2>動画プロバイダ</h2>
 <div class="card">
-    <p class="muted">Cloudflare Stream の場合は、<strong>Account ID と API Token（権限: Account › Stream › Edit）を保存してから「Cloudflare を自動設定」</strong>を押してください。署名鍵の作成と Webhook の設定をサーバーで行い、秘密情報は暗号化して保存します（画面には表示しません）。</p>
+    <p class="muted">Cloudflare Stream の場合は、<strong>Account ID と API Token（権限: Media › Stream › Edit）を保存してから「Cloudflare を自動設定」</strong>を押してください。署名鍵の作成と Webhook の設定をサーバーで行い、秘密情報は暗号化して保存します（画面には表示しません）。</p>
     <table style="margin-bottom:12px">
         @foreach (['account_id' => 'Account ID', 'api_token' => 'API Token', 'signing_key_id' => '署名鍵', 'webhook_secret' => 'Webhook', 'customer_subdomain' => 'カスタマーサブドメイン'] as $key => $label)
             <tr><th style="width:200px">{{ $label }}</th><td>{!! $app->videoSetting($key) ? '<span class="badge badge-ok">設定済み</span>'.(in_array($key, ['account_id', 'signing_key_id', 'customer_subdomain']) ? ' <span class="mono">'.e($app->videoSetting($key)).'</span>' : '') : '<span class="badge badge-muted">未設定</span>' !!}</td></tr>
@@ -115,7 +115,7 @@
         </div>
         <div class="form-row"><label>Cloudflare Account ID</label><input type="text" name="account_id" value="{{ old('account_id', $app->videoSetting('account_id')) }}"></div>
         <div class="form-row"><label>カスタマーサブドメイン（例: customer-xxxx.cloudflarestream.com）</label><input type="text" name="customer_subdomain" value="{{ old('customer_subdomain', $app->videoSetting('customer_subdomain')) }}"></div>
-        @foreach (['api_token' => 'API Token（Stream:Edit 権限）', 'signing_key_id' => '署名鍵の Key ID', 'signing_private_key' => '署名鍵の秘密鍵（PEM。Cloudflare が返す base64 のままでも可）', 'webhook_secret' => 'Webhook の署名シークレット'] as $key => $label)
+        @foreach (['api_token' => 'API Token（権限: Media › Stream › Edit）', 'signing_key_id' => '署名鍵の Key ID', 'signing_private_key' => '署名鍵の秘密鍵（PEM。Cloudflare が返す base64 のままでも可）', 'webhook_secret' => 'Webhook の署名シークレット'] as $key => $label)
             <div class="form-row">
                 <label>{{ $label }}</label>
                 @if ($key === 'signing_key_id')
