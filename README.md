@@ -95,6 +95,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | `eevee:push:prune-deliveries` | 保持期間を過ぎた送信結果の削除（毎日） |
 | `eevee:playback:expire` | ハートビートが途絶えた視聴セッションの期限切れ処理（毎分） |
 | `eevee:segments:benchmark {app_key}` | セグメント抽出の性能計測 |
+| `eevee:doctor` | 本番の設定と DB・Valkey・キュー・スケジューラーの確認 |
 
 ## ドキュメント
 
@@ -104,7 +105,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | [docs/client-integration.md](docs/client-integration.md) | アプリへの組み込み手順（FCM 設定、端末登録、ログイン、開封記録、動画再生） |
 | [docs/openapi.json](docs/openapi.json) | アプリ向けAPI・サーバー間APIの OpenAPI 3.1 仕様書 |
 | [docs/manual-verification.md](docs/manual-verification.md) | 実際の FCM・Cloudflare での動作確認手順 |
-| [docs/deployment.md](docs/deployment.md) | デプロイ、TrustProxies（ロードバランサー・Cloudflare の背後）、運用 |
+| [docs/deployment.md](docs/deployment.md) | Laravel Cloud へのデプロイ、TrustProxies、運用（VPS・AWS の場合も） |
 | [docs/performance.md](docs/performance.md) | セグメント抽出の性能計測結果 |
 
 ## ディレクトリ構成（主なもの）

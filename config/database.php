@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
 use Pdo\Mysql;
 
 return [
@@ -149,12 +148,15 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            // 表示名（APP_NAME）を変えてもキーが変わらないよう、接頭辞は固定値を既定にする
+            'prefix' => env('REDIS_PREFIX', 'eevee-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
         'default' => [
             'url' => env('REDIS_URL'),
+            // マネージドの Valkey / Redis で TLS が必要な場合は REDIS_SCHEME=tls
+            'scheme' => env('REDIS_SCHEME'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
@@ -168,6 +170,8 @@ return [
 
         'cache' => [
             'url' => env('REDIS_URL'),
+            // マネージドの Valkey / Redis で TLS が必要な場合は REDIS_SCHEME=tls
+            'scheme' => env('REDIS_SCHEME'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),

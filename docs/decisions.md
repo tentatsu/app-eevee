@@ -180,3 +180,17 @@
 - **管理画面の CSS/JS**: ビルド不要の素の CSS（`public/css/eevee.css`）と、ビューに埋め込んだ少量の JavaScript にした。Vite / npm のビルドなしで Sail を起動してすぐ使えるようにするため。
 - **アプリユーザーの削除**: サーバー間API `DELETE /users/{external_user_id}` でユーザーとトークンを削除する（端末は未ログインの端末として残す）。管理画面からの削除・退会 API は今回は用意していない。
 - **招待**: 有効期限 7 日。同じメールアドレスに再度招待すると古い招待は無効になる。既にアカウントがある人はパスワードを入力して参加する。
+
+## D-024 本番は Laravel Cloud を前提にする
+
+- **判断**: 本番環境は Laravel Cloud を前提にする。サーバーの準備・デプロイ・費用（MVP で常時稼働のサーバー代がかかること）を減らすため。
+- **理由**: GitHub への push で自動デプロイでき、MySQL・Valkey（Redis 互換）・キューのワーカー・スケジューラーをマネージドで使える。アクセスがない間は休止して課金を抑えられる。CDN と DDoS 対策（Cloudflare）が標準で付く。app-eevee は1つの環境で複数の顧客・アプリを扱うので、費用を案件全体で分け合える。
+- **調整した点**
+  - Horizon はなくても動く構成にした（`EEVEE_HORIZON_ENABLED`）。Laravel Cloud のマネージドキューは `queue:work` で動き、Horizon に対応していないため。ワーカーは `push` と `default` のキューを処理する。
+  - キューの `retry_after` の既定値を 90 秒から 660 秒にした。最長のジョブ（PrepareCampaignJob、timeout 600 秒）より短いと、処理中のジョブが別のワーカーで二重に実行されるため（送信自体は行ロックで二重にならないが、無駄な処理になる）。
+  - Redis（Valkey）の接続に `REDIS_SCHEME`（TLS）を追加し、キーの接頭辞を APP_NAME から切り離して固定値（`eevee-`）を既定にした。
+  - セキュリティログ（IP 制限の拒否など）の出力先を `LOG_SECURITY_CHANNELS` で切り替えられるようにした。Laravel Cloud では `stderr` にしてログ画面で見る。
+  - スケジューラーの定期実行に `onOneServer()` を付け、複数台になっても1回だけ実行されるようにした。スケジューラーの最終実行時刻を記録し、`eevee:doctor` で確認できるようにした。
+  - `eevee:doctor` コマンドを追加した。Valkey で視聴セッションの Lua スクリプト（EVAL / cjson / ZADD XX）が動くかなど、本番の設定と接続を確認する。
+  - 管理画面とメールに出す名前を `APP_NAME` から取るようにした（コード内の識別子とは切り離した）。
+- **リスクと保険**: Laravel Cloud は 2025 年に一般提供が始まった新しいサービスで、仕様や料金の変更があり得る。稼働率の保証は Business 以上の追加サポートでのみ付く。app-eevee は Laravel Cloud 専用の機能に依存しない普通の Laravel アプリとして保ち、Forge ＋ VPS や AWS にもそのまま移せるようにしておく。DB のバックアップは外部にも取る。

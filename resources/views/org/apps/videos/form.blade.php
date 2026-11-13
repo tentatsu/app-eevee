@@ -11,7 +11,7 @@
          data-renew-url="{{ route('org.apps.videos.upload-url', [$organization, $app, $video]) }}"
          data-done-url="{{ route('org.apps.videos.uploaded', [$organization, $app, $video]) }}">
         <h2 style="margin-top:0">動画ファイルのアップロード</h2>
-        <p class="muted">ファイルはブラウザから Cloudflare Stream に直接送られます（app-eevee のサーバーは経由しません）。この方式（Direct Creator Upload の基本アップロード）は 200MB までです。それより大きいファイルは tus 方式が必要です（docs/manual-verification.md 参照）。</p>
+        <p class="muted">ファイルはブラウザから Cloudflare Stream に直接送られます（このシステムのサーバーは経由しません）。この方式（Direct Creator Upload の基本アップロード）は 200MB までです。それより大きいファイルは tus 方式が必要です（docs/manual-verification.md 参照）。</p>
         @if ($video->status_message)<div class="alert alert-error">{{ $video->status_message }}</div>@endif
         <input type="file" accept="video/*" id="video-file">
         <button type="button" class="btn btn-primary" id="upload-btn">アップロード</button>

@@ -22,6 +22,14 @@ return [
 
     'invitation_ttl_days' => 7,
 
+    /*
+    | Horizon を使うか。Laravel Cloud のマネージドキュー（queue:work で動く）では false にする。
+    | false でもジョブ自体は通常のキューワーカーで動く（Horizon はダッシュボードと監視だけの役割）。
+    */
+    'horizon' => [
+        'enabled' => (bool) env('EEVEE_HORIZON_ENABLED', true),
+    ],
+
     'rate_limits' => [
         'app_per_minute' => (int) env('EEVEE_RATE_LIMIT_PER_APP', 6000),
         'ip_per_minute' => (int) env('EEVEE_RATE_LIMIT_PER_IP', 300),

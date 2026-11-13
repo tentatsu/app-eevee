@@ -54,6 +54,13 @@ return [
 
         // IP制限による拒否などセキュリティ関連のログ
         'security' => [
+            'driver' => 'stack',
+            // ローカル・VPS はファイル、Laravel Cloud など標準出力でログを集める環境は LOG_SECURITY_CHANNELS=stderr
+            'channels' => explode(',', (string) env('LOG_SECURITY_CHANNELS', 'security_file')),
+            'ignore_exceptions' => false,
+        ],
+
+        'security_file' => [
             'driver' => 'daily',
             'path' => storage_path('logs/security.log'),
             'level' => 'info',
