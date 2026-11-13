@@ -41,6 +41,8 @@ class CloudflareStreamProvider implements ProvisionsAutomatically, VideoProvider
         $res = $this->client($app)->post($this->path($app, '/direct_upload'), [
             'maxDurationSeconds' => $maxDurationSeconds,
             'requireSignedURLs' => true,
+            // 冒頭は黒い画面が多いので、サムネイルは動画の 10% の位置から作る
+            'thumbnailTimestampPct' => 0.1,
             'meta' => ['name' => $title, 'app_key' => $app->app_key],
         ]);
         $result = $this->result($res, 'direct_upload');
@@ -124,21 +126,9 @@ class CloudflareStreamProvider implements ProvisionsAutomatically, VideoProvider
 
     public function playbackUrls(App $app, Video $video, CarbonInterface $expiresAt): PlaybackUrls
     {
-        $keyId = $app->videoSetting('signing_key_id');
-        $privateKey = self::normalizePem($app->videoSetting('signing_private_key'));
-        if ($keyId === null || $privateKey === null || $video->provider_video_id === null) {
-            throw new VideoProviderException('Cloudflare signing key is not configured.');
-        }
-
         $now = CarbonImmutable::now();
-        $token = JWT::encode([
-            'sub' => $video->provider_video_id,
-            'kid' => $keyId,
-            'exp' => $expiresAt->getTimestamp(),
-            'nbf' => $now->subMinute()->getTimestamp(),
-        ], $privateKey, 'RS256', $keyId);
-
-        $host = $app->videoSetting('customer_subdomain') ?? 'videodelivery.net';
+        $token = $this->signToken($app, $video, $expiresAt, $now->subMinute());
+        $host = $this->host($app);
 
         return new PlaybackUrls(
             "https://{$host}/{$token}/manifest/video.m3u8",
@@ -146,6 +136,58 @@ class CloudflareStreamProvider implements ProvisionsAutomatically, VideoProvider
             $token,
             $expiresAt,
         );
+    }
+
+    /**
+     * 署名付き URL 必須の動画は、サムネイルにもトークンが要る。
+     * 同じ有効期限なら同じ URL になる（nbf を付けない）ので、アプリ側で画像をキャッシュできる。
+     */
+    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt): ?string
+    {
+        if ($video->provider_video_id === null || $app->videoSetting('signing_key_id') === null || $app->videoSetting('signing_private_key') === null) {
+            return null;
+        }
+        $token = $this->signToken($app, $video, $expiresAt, null);
+
+        return "https://{$this->host($app)}/{$token}/thumbnails/thumbnail.jpg?height=480";
+    }
+
+    /**
+     * Cloudflare の署名付き URL のトークン（JWT, RS256）。
+     */
+    private function signToken(App $app, Video $video, CarbonInterface $expiresAt, ?CarbonInterface $notBefore): string
+    {
+        $keyId = $app->videoSetting('signing_key_id');
+        $privateKey = self::normalizePem($app->videoSetting('signing_private_key'));
+        if ($keyId === null || $privateKey === null || $video->provider_video_id === null) {
+            throw new VideoProviderException('Cloudflare signing key is not configured.');
+        }
+
+        $claims = [
+            'sub' => $video->provider_video_id,
+            'kid' => $keyId,
+            'exp' => $expiresAt->getTimestamp(),
+        ];
+        if ($notBefore !== null) {
+            $claims['nbf'] = $notBefore->getTimestamp();
+        }
+
+        return JWT::encode($claims, $privateKey, 'RS256', $keyId);
+    }
+
+    private function host(App $app): string
+    {
+        return $app->videoSetting('customer_subdomain') ?? 'videodelivery.net';
+    }
+
+    /**
+     * プロバイダが作ったサムネイルの URL か（管理画面で指定した URL と区別するため）。
+     */
+    public static function isProviderThumbnail(?string $url): bool
+    {
+        $host = $url !== null ? parse_url($url, PHP_URL_HOST) : null;
+
+        return is_string($host) && (preg_match('/^customer-[a-z0-9]+\.cloudflarestream\.com$/', $host) === 1 || $host === 'videodelivery.net');
     }
 
     public function verifyWebhook(App $app, Request $request): bool

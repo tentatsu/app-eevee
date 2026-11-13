@@ -41,6 +41,11 @@ interface VideoProvider
     public function playbackUrls(App $app, Video $video, CarbonInterface $expiresAt): PlaybackUrls;
 
     /**
+     * プロバイダが自動で作ったサムネイルの URL（署名付き）。作れなければ null。
+     */
+    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt): ?string;
+
+    /**
      * Webhook の署名を検証する。
      */
     public function verifyWebhook(App $app, Request $request): bool;

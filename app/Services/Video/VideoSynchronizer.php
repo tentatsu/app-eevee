@@ -23,9 +23,7 @@ class VideoSynchronizer
         if ($remote->durationSeconds !== null) {
             $video->duration_seconds = $remote->durationSeconds;
         }
-        if ($video->thumbnail_url === null && $remote->thumbnailUrl !== null) {
-            $video->thumbnail_url = $remote->thumbnailUrl;
-        }
+        // サムネイルは保存しない（署名付き URL が必要なため、表示のたびに VideoThumbnails で作る）
         $video->save();
 
         // カスタマーサブドメインが未設定なら、動画の再生 URL から自動で設定する

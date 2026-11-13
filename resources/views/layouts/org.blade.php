@@ -13,21 +13,23 @@
 </div>
 <div class="layout">
     <nav class="sidebar">
-        <a href="{{ route('org.dashboard', $org) }}" @class(['active' => request()->routeIs('org.dashboard')])>ダッシュボード</a>
-        @if (Route::has('org.apps.index'))
-            <a href="{{ route('org.apps.index', $org) }}" @class(['active' => request()->routeIs('org.apps.index', 'org.apps.create')])>アプリ</a>
-        @endif
+        <x-nav-link :href="route('org.dashboard', $org)" icon="home" :active="request()->routeIs('org.dashboard')">ダッシュボード</x-nav-link>
+        <x-nav-link :href="route('org.apps.index', $org)" icon="apps" :active="request()->routeIs('org.apps.index', 'org.apps.create')">アプリ一覧</x-nav-link>
+
         @isset($currentApp)
             @include('org.partials.app-nav', ['org' => $org, 'app' => $currentApp])
         @endisset
-        <h4>組織</h4>
-        @can('manage-organization')
-            <a href="{{ route('org.members.index', $org) }}" @class(['active' => request()->routeIs('org.members.*')])>メンバー</a>
-            <a href="{{ route('org.ip-allowlist.edit', $org) }}" @class(['active' => request()->routeIs('org.ip-allowlist.*')])>IP制限</a>
-        @endcan
-        @can('view-audit-logs')
-            <a href="{{ route('org.audit-logs', $org) }}" @class(['active' => request()->routeIs('org.audit-logs')])>監査ログ</a>
-        @endcan
+
+        @if (Gate::check('manage-organization') || Gate::check('view-audit-logs'))
+            <div class="nav-section">組織</div>
+            @can('manage-organization')
+                <x-nav-link :href="route('org.members.index', $org)" icon="team" :active="request()->routeIs('org.members.*')">メンバー</x-nav-link>
+                <x-nav-link :href="route('org.ip-allowlist.edit', $org)" icon="shield" :active="request()->routeIs('org.ip-allowlist.*')">IP制限</x-nav-link>
+            @endcan
+            @can('view-audit-logs')
+                <x-nav-link :href="route('org.audit-logs', $org)" icon="doc" :active="request()->routeIs('org.audit-logs')">監査ログ</x-nav-link>
+            @endcan
+        @endif
     </nav>
     <main class="main">
         <x-flash />

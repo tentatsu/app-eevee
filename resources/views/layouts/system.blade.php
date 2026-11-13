@@ -9,13 +9,14 @@
 </div>
 <div class="layout">
     <nav class="sidebar">
-        <a href="{{ route('system.dashboard') }}" @class(['active' => request()->routeIs('system.dashboard', 'system.organizations.*')])>組織</a>
-        <a href="{{ route('system.ip-allowlist.edit') }}" @class(['active' => request()->routeIs('system.ip-allowlist.*')])>IP許可リスト</a>
-        <a href="{{ route('system.audit-logs') }}" @class(['active' => request()->routeIs('system.audit-logs')])>監査ログ</a>
+        <x-nav-link :href="route('system.dashboard')" icon="building" :active="request()->routeIs('system.dashboard', 'system.organizations.*')">組織</x-nav-link>
+        <x-nav-link :href="route('system.ip-allowlist.edit')" icon="shield" :active="request()->routeIs('system.ip-allowlist.*')">IP許可リスト</x-nav-link>
+        <x-nav-link :href="route('system.audit-logs')" icon="doc" :active="request()->routeIs('system.audit-logs')">監査ログ</x-nav-link>
+        <div class="nav-section">ツール</div>
         @if (config('eevee.horizon.enabled'))
-            <a href="{{ url('/horizon') }}">Horizon（キュー）</a>
+            <x-nav-link :href="url('/horizon')" icon="queue">Horizon（キュー）</x-nav-link>
         @endif
-        <a href="{{ url('/docs/api') }}">API仕様書</a>
+        <x-nav-link :href="url('/docs/api')" icon="list">API仕様書</x-nav-link>
     </nav>
     <main class="main">
         <x-flash />

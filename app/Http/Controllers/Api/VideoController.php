@@ -10,6 +10,7 @@ use App\Services\Video\Access\VideoAccessGate;
 use App\Services\Video\PlaybackSessionManager;
 use App\Services\Video\VideoProviderException;
 use App\Services\Video\VideoProviderManager;
+use App\Services\Video\VideoThumbnails;
 use App\Support\Api\ApiException;
 use App\Support\Api\ApiResponse;
 use Carbon\CarbonImmutable;
@@ -25,6 +26,7 @@ class VideoController extends ApiController
         private readonly PlaybackSessionManager $sessions,
         private readonly VideoAccessGate $gate,
         private readonly VideoProviderManager $providers,
+        private readonly VideoThumbnails $thumbnails,
     ) {}
 
     /**
@@ -174,8 +176,10 @@ class VideoController extends ApiController
      */
     private function toArray(Video $video, ?AppUser $user): array
     {
-        return $video->toApiArray() + [
+        return array_merge($video->toApiArray(), [
+            // 管理画面で指定したサムネイル、なければ動画プロバイダが自動で作ったもの（署名付き）
+            'thumbnail_url' => $this->thumbnails->url($this->currentApp(), $video),
             'playable' => $video->visibility === VideoVisibility::Public || $user !== null,
-        ];
+        ]);
     }
 }

@@ -60,6 +60,9 @@
     <div class="stat"><div class="v">{{ number_format($stats['limit_events'] ?? 0) }}</div><div class="l">同時視聴の超過件数</div></div>
     <div class="stat"><div class="v">{{ $video->duration_seconds ? gmdate('H:i:s', $video->duration_seconds) : '—' }}</div><div class="l">長さ</div></div>
 </div>
+@if ($thumb ?? null)
+    <div style="margin-bottom:14px"><img src="{{ $thumb }}" alt="サムネイル" class="thumb-large"></div>
+@endif
 <div class="row" style="margin-bottom:14px">
     <span class="muted mono">{{ $video->provider }} / {{ $video->provider_video_id }}</span>
     <form method="post" action="{{ route('org.apps.videos.refresh', [$organization, $app, $video]) }}">@csrf<button class="btn btn-sm">プロバイダから状態を取得</button></form>
@@ -71,7 +74,7 @@
         @csrf @if ($video->exists) @method('put') @endif
         <div class="form-row"><label>タイトル</label><input type="text" name="title" value="{{ old('title', $video->title) }}" required></div>
         <div class="form-row"><label>説明</label><textarea name="description" rows="4">{{ old('description', $video->description) }}</textarea></div>
-        <div class="form-row"><label>サムネイル画像の URL（空欄なら変換後に Cloudflare のサムネイルを使います）</label><input type="url" name="thumbnail_url" value="{{ old('thumbnail_url', $video->thumbnail_url) }}"></div>
+        <div class="form-row"><label>サムネイル画像の URL（空欄なら、Cloudflare が動画から自動で作ったサムネイルを使います）</label><input type="url" name="thumbnail_url" value="{{ old('thumbnail_url', \App\Services\Video\Cloudflare\CloudflareStreamProvider::isProviderThumbnail($video->thumbnail_url) ? '' : $video->thumbnail_url) }}"></div>
         <div class="form-row"><label>公開範囲</label>
             <select name="visibility" style="max-width:320px">
                 @foreach (\App\Enums\VideoVisibility::cases() as $v)<option value="{{ $v->value }}" @selected(old('visibility', $video->visibility?->value) === $v->value)>{{ $v->label() }}</option>@endforeach

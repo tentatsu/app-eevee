@@ -38,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
 
         Password::defaults(fn () => Password::min(8));
 
+        // 組織の管理画面のメニュー: アプリの切り替え用に、組織のアプリ一覧を渡す
+        \Illuminate\Support\Facades\View::composer('layouts.org', function ($view) {
+            if (app(TenantContext::class)->organizationId() !== null) {
+                $view->with('orgApps', \App\Models\App::query()->orderBy('name')->get(['id', 'name']));
+            }
+        });
+
         $this->defineGates();
         $this->defineRateLimiters();
     }

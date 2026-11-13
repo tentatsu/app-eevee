@@ -12,6 +12,7 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Video\VideoProviderException;
 use App\Services\Video\VideoProviderManager;
 use App\Services\Video\VideoSynchronizer;
+use App\Services\Video\VideoThumbnails;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,12 +25,16 @@ use Illuminate\View\View;
 
 class VideoController extends Controller
 {
-    public function index(Organization $organization, App $app): View
+    public function index(Organization $organization, App $app, VideoThumbnails $thumbnails): View
     {
         $videos = Video::query()->orderBy('sort_order')->orderByDesc('id')->paginate(30);
         $stats = $this->stats(collect($videos->items())->pluck('id')->all());
+        $thumbs = [];
+        foreach ($videos->items() as $v) {
+            $thumbs[$v->id] = $thumbnails->url($app, $v);
+        }
 
-        return view('org.apps.videos.index', compact('organization', 'app', 'videos', 'stats'));
+        return view('org.apps.videos.index', compact('organization', 'app', 'videos', 'stats', 'thumbs'));
     }
 
     public function create(Organization $organization, App $app): View
@@ -66,12 +71,13 @@ class VideoController extends Controller
             ->with('status', '動画ファイルを選んでアップロードしてください。');
     }
 
-    public function edit(Organization $organization, App $app, Video $video): View
+    public function edit(Organization $organization, App $app, Video $video, VideoThumbnails $thumbnails): View
     {
         $stats = $this->stats([$video->id])[$video->id] ?? null;
         $recent = $video->playbackSessions()->latest('started_at')->limit(20)->get();
+        $thumb = $thumbnails->url($app, $video);
 
-        return view('org.apps.videos.form', compact('organization', 'app', 'video', 'stats', 'recent'));
+        return view('org.apps.videos.form', compact('organization', 'app', 'video', 'stats', 'recent', 'thumb'));
     }
 
     public function update(Request $request, Organization $organization, App $app, Video $video, AuditLogger $audit): RedirectResponse
