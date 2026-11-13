@@ -5,6 +5,7 @@
     <h1>{{ $campaign->title }} <span class="badge">{{ $campaign->status->label() }}</span></h1>
     @can('edit-content')
     <div class="row">
+        <form method="post" action="{{ route('org.apps.campaigns.duplicate', [$organization, $app, $campaign]) }}">@csrf<button class="btn">コピーして作成</button></form>
         @if ($campaign->status->value === 'draft')
             <a class="btn" href="{{ route('org.apps.campaigns.edit', [$organization, $app, $campaign]) }}">編集</a>
             <form method="post" action="{{ route('org.apps.campaigns.test', [$organization, $app, $campaign]) }}">@csrf<button class="btn">テスト配信（{{ $testDeviceCount }}台）</button></form>

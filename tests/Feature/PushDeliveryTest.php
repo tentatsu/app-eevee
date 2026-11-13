@@ -325,3 +325,40 @@ it('warns when there is no device to send to', function () {
     $c = campaign();
     $this->get("/acme/apps/{$this->clientApp->id}/campaigns/{$c->id}")->assertOk()->assertSee('送信予定の端末が 0 台です');
 });
+
+it('duplicates a sent campaign as a new draft', function () {
+    Device::factory()->for($this->clientApp)->create();
+    $cat = NotificationCategory::query()->create(['app_id' => $this->clientApp->id, 'key' => 'campaign', 'label' => 'c', 'default_enabled' => true]);
+    $original = campaign(['image_url' => 'https://example.com/a.png', 'notification_category_id' => $cat->id, 'target_type' => CampaignTarget::Users, 'target_user_ids' => [1, 2]]);
+    app(CampaignDispatcher::class)->send(campaign(['title' => 'other']));
+    PushCampaign::query()->whereKey($original->id)->update(['status' => CampaignStatus::Sent, 'success_count' => 10, 'open_count' => 3, 'scheduled_at' => now()->addDay()]);
+
+    actingAsOrgMember($this->org, OrgRole::Editor);
+    $url = "/acme/apps/{$this->clientApp->id}/campaigns";
+    $this->get("{$url}/{$original->id}")->assertOk()->assertSee('コピーして作成');
+    $this->get($url)->assertOk()->assertSee('コピー');
+
+    $res = $this->post("{$url}/{$original->id}/duplicate");
+    $copy = PushCampaign::query()->latest('id')->first();
+    $res->assertRedirect("{$url}/{$copy->id}/edit");
+
+    expect($copy->id)->not->toBe($original->id)
+        ->and($copy->status)->toBe(CampaignStatus::Draft)
+        ->and($copy->title)->toBe('Hello')
+        ->and($copy->body)->toBe('World')
+        ->and($copy->image_url)->toBe('https://example.com/a.png')
+        ->and($copy->data)->toEqual(['type' => 'notice', 'id' => '123'])
+        ->and($copy->notification_category_id)->toBe($cat->id)
+        ->and($copy->target_type)->toBe(CampaignTarget::Users)
+        ->and($copy->target_user_ids)->toBe([1, 2])
+        ->and($copy->scheduled_at)->toBeNull()
+        ->and($copy->success_count)->toBe(0)
+        ->and($copy->open_count)->toBe(0);
+    $this->get("{$url}/{$copy->id}/edit")->assertOk()->assertSee('Hello');
+});
+
+it('forbids viewers from duplicating campaigns', function () {
+    actingAsOrgMember($this->org, OrgRole::Viewer);
+    $c = campaign();
+    $this->post("/acme/apps/{$this->clientApp->id}/campaigns/{$c->id}/duplicate")->assertForbidden();
+});

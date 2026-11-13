@@ -126,6 +126,35 @@ class CampaignController extends Controller
         return back()->with('status', '予約を取り消しました（下書きに戻りました）。');
     }
 
+    /**
+     * コピーして作成: 内容と対象を引き継いだ下書きを作り、編集画面へ。予約日時と送信結果は引き継がない。
+     */
+    public function duplicate(Request $request, Organization $organization, App $app, PushCampaign $campaign, AuditLogger $audit): RedirectResponse
+    {
+        Gate::authorize('edit-content');
+        abort_if($campaign->is_test, 404);
+        /** @var AdminUser $admin */
+        $admin = $request->user('admin');
+
+        $copy = PushCampaign::query()->create([
+            'app_id' => $app->id,
+            'title' => $campaign->title,
+            'body' => $campaign->body,
+            'image_url' => $campaign->image_url,
+            'data' => $campaign->data,
+            'notification_category_id' => $campaign->notification_category_id,
+            'target_type' => $campaign->target_type,
+            'segment_id' => $campaign->segment_id,
+            'target_user_ids' => $campaign->target_user_ids,
+            'status' => CampaignStatus::Draft,
+            'created_by' => $admin->email,
+        ]);
+        $audit->record('push.campaign_duplicated', $copy, ['copied_from' => $campaign->id], 'プッシュをコピーして作成: '.$copy->title);
+
+        return redirect()->route('org.apps.campaigns.edit', [$organization, $app, $copy])
+            ->with('status', '「'.$campaign->title.'」をコピーして下書きを作りました。内容を確認して保存・送信してください。');
+    }
+
     public function sendTest(Request $request, Organization $organization, App $app, PushCampaign $campaign, CampaignDispatcher $dispatcher, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('edit-content');

@@ -6,7 +6,7 @@
 </div>
 <div class="card">
     <table>
-        <tr><th>タイトル</th><th>対象</th><th>状態</th><th>送信日時</th><th>対象</th><th>成功</th><th>失敗</th><th>無効</th><th>開封（率）</th></tr>
+        <tr><th>タイトル</th><th>対象</th><th>状態</th><th>送信日時</th><th>対象</th><th>成功</th><th>失敗</th><th>無効</th><th>開封（率）</th><th></th></tr>
         @forelse ($campaigns as $c)
             <tr>
                 <td><a href="{{ route('org.apps.campaigns.show', [$organization, $app, $c]) }}">{{ $c->title }}</a></td>
@@ -18,9 +18,10 @@
                 <td>{{ number_format($c->failure_count) }}</td>
                 <td>{{ number_format($c->invalid_token_count) }}</td>
                 <td>{{ number_format($c->open_count) }}{{ $c->openRate() !== null ? '（'.$c->openRate().'%）' : '' }}</td>
+                <td>@can('edit-content')<form method="post" action="{{ route('org.apps.campaigns.duplicate', [$organization, $app, $c]) }}">@csrf<button class="btn btn-sm">コピー</button></form>@endcan</td>
             </tr>
         @empty
-            <tr><td colspan="9" class="muted">まだプッシュがありません。</td></tr>
+            <tr><td colspan="10" class="muted">まだプッシュがありません。</td></tr>
         @endforelse
     </table>
     <div class="pagination">{{ $campaigns->links() }}</div>
