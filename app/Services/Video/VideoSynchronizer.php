@@ -28,6 +28,14 @@ class VideoSynchronizer
         }
         $video->save();
 
+        // カスタマーサブドメインが未設定なら、動画の再生 URL から自動で設定する
+        if ($remote->playbackHost !== null && $app->videoSetting('customer_subdomain') === null) {
+            $settings = $app->video_provider_settings ?? [];
+            $settings['customer_subdomain'] = $remote->playbackHost;
+            $app->video_provider_settings = $settings;
+            $app->save();
+        }
+
         // 署名付き URL が必須になっていなければ設定する（アップロード時に指定しているが念のため）
         if ($remote->signedPlaybackRequired === false && $video->provider_video_id !== null) {
             try {

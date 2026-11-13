@@ -5,11 +5,14 @@ namespace App\Services\Video\Cloudflare;
 use App\Enums\VideoStatus;
 use App\Models\App;
 use App\Models\Video;
+use App\Services\Video\Contracts\ProvisionsAutomatically;
 use App\Services\Video\Contracts\VideoProvider;
 use App\Services\Video\Data\DirectUpload;
 use App\Services\Video\Data\PlaybackUrls;
 use App\Services\Video\Data\ProviderVideo;
+use App\Services\Video\Data\ProvisionResult;
 use App\Services\Video\VideoProviderException;
+use App\Services\Video\WebhookConflictException;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Firebase\JWT\JWT;
@@ -26,7 +29,7 @@ use Illuminate\Support\Facades\Http;
  *         https://{customer-xxx.cloudflarestream.com}/{token}/manifest/video.m3u8 を返す
  * - Webhook: Webhook-Signature: time=...,sig1=hex(HMAC-SHA256(secret, "{time}.{body}")) を検証
  */
-class CloudflareStreamProvider implements VideoProvider
+class CloudflareStreamProvider implements ProvisionsAutomatically, VideoProvider
 {
     public const API_BASE = 'https://api.cloudflare.com/client/v4';
 
@@ -51,6 +54,45 @@ class CloudflareStreamProvider implements VideoProvider
             $result['uid'],
             isset($result['expiry']) && is_string($result['expiry']) ? CarbonImmutable::parse($result['expiry']) : null,
         );
+    }
+
+    /**
+     * 署名鍵の作成と Webhook の設定を行う（管理画面の「自動設定」）。
+     * Account ID と API Token が保存済みであること。
+     */
+    public function provision(App $app, string $webhookUrl, bool $overwriteWebhook): ProvisionResult
+    {
+        $client = $this->client($app);
+        $settings = [];
+        $notes = [];
+
+        // 1. Webhook（アカウントに1つ）。別の URL が設定済みなら、確認のうえで上書きする
+        $current = $client->get($this->path($app, '/webhook'));
+        $currentUrl = $current->successful() && is_array($current->json('result')) ? (string) ($current->json('result.notificationUrl') ?? '') : '';
+        if ($currentUrl !== '' && $currentUrl !== $webhookUrl && ! $overwriteWebhook) {
+            throw new WebhookConflictException($currentUrl);
+        }
+        $webhook = $this->result($client->put($this->path($app, '/webhook'), ['notificationUrl' => $webhookUrl]), 'webhook');
+        if (! is_string($webhook['secret'] ?? null) || $webhook['secret'] === '') {
+            throw new VideoProviderException('Cloudflare did not return a webhook secret.');
+        }
+        $settings['webhook_secret'] = $webhook['secret'];
+        $notes[] = 'Webhook の送信先を '.$webhookUrl.' に設定しました。';
+
+        // 2. 署名鍵（再生トークン用）。既に鍵があっても新しく作る（古い鍵で発行したトークンも期限までは有効）
+        $key = $this->result($client->post($this->path($app, '/keys')), 'keys');
+        if (! is_string($key['id'] ?? null) || ! is_string($key['pem'] ?? null)) {
+            throw new VideoProviderException('Cloudflare did not return a signing key.');
+        }
+        $settings['signing_key_id'] = $key['id'];
+        $settings['signing_private_key'] = $key['pem'];
+        $notes[] = '再生トークン用の署名鍵を作成しました（Key ID: '.$key['id'].'）。';
+
+        if ($app->videoSetting('customer_subdomain') === null) {
+            $notes[] = 'カスタマーサブドメインは、最初の動画の変換が終わったときに自動で設定されます。';
+        }
+
+        return new ProvisionResult($settings, $notes);
     }
 
     public function getVideo(App $app, string $providerVideoId): ProviderVideo
@@ -162,7 +204,21 @@ class CloudflareStreamProvider implements VideoProvider
             is_string($data['thumbnail'] ?? null) ? $data['thumbnail'] : null,
             is_string($message) && $message !== '' ? $message : null,
             isset($data['requireSignedURLs']) ? (bool) $data['requireSignedURLs'] : null,
+            self::playbackHost($data),
         );
+    }
+
+    /**
+     * 再生 URL（playback.hls）から customer-xxxx.cloudflarestream.com を取り出す。
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function playbackHost(array $data): ?string
+    {
+        $hls = is_array($data['playback'] ?? null) ? ($data['playback']['hls'] ?? null) : null;
+        $host = is_string($hls) ? parse_url($hls, PHP_URL_HOST) : null;
+
+        return is_string($host) && preg_match('/^customer-[a-z0-9]+\.cloudflarestream\.com$/', $host) === 1 ? $host : null;
     }
 
     /**

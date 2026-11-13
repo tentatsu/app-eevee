@@ -73,6 +73,37 @@
 
 <h2>動画プロバイダ</h2>
 <div class="card">
+    <p class="muted">Cloudflare Stream の場合は、<strong>Account ID と API Token（権限: Account › Stream › Edit）を保存してから「Cloudflare を自動設定」</strong>を押してください。署名鍵の作成と Webhook の設定をサーバーで行い、秘密情報は暗号化して保存します（画面には表示しません）。</p>
+    <table style="margin-bottom:12px">
+        @foreach (['account_id' => 'Account ID', 'api_token' => 'API Token', 'signing_key_id' => '署名鍵', 'webhook_secret' => 'Webhook', 'customer_subdomain' => 'カスタマーサブドメイン'] as $key => $label)
+            <tr><th style="width:200px">{{ $label }}</th><td>{!! $app->videoSetting($key) ? '<span class="badge badge-ok">設定済み</span>'.(in_array($key, ['account_id', 'signing_key_id', 'customer_subdomain']) ? ' <span class="mono">'.e($app->videoSetting($key)).'</span>' : '') : '<span class="badge badge-muted">未設定</span>' !!}</td></tr>
+        @endforeach
+        <tr><th>Webhook の送信先</th><td class="mono">{{ route('webhooks.cloudflare', ['app_key' => $app->app_key]) }}</td></tr>
+    </table>
+
+    @if (session('webhook_conflict'))
+        <div class="alert alert-warn">
+            この Cloudflare アカウントの Webhook には、別の送信先（<span class="mono">{{ session('webhook_conflict') }}</span>）が設定されています。Webhook はアカウントに1つだけなので、上書きするとその送信先には通知が届かなくなります。
+            <form method="post" action="{{ route('org.apps.video-provider.provision', [$organization, $app]) }}" style="margin-top:8px">
+                @csrf <input type="hidden" name="overwrite_webhook" value="1">
+                <button class="btn btn-danger">上書きして自動設定する</button>
+            </form>
+        </div>
+    @endif
+    <form method="post" action="{{ route('org.apps.video-provider', [$organization, $app]) }}" class="row" style="margin-bottom:10px">
+        @csrf @method('put')
+        <input type="hidden" name="video_provider" value="cloudflare_stream">
+        <input type="text" name="account_id" value="{{ old('account_id', $app->videoSetting('account_id')) }}" placeholder="Account ID" style="max-width:280px">
+        <input type="password" name="api_token" autocomplete="new-password" placeholder="{{ $app->videoSetting('api_token') ? 'API Token（設定済み。変更する場合のみ入力）' : 'API Token' }}" style="max-width:320px">
+        <button class="btn">保存</button>
+    </form>
+    <form method="post" action="{{ route('org.apps.video-provider.provision', [$organization, $app]) }}" style="margin-bottom:16px">
+        @csrf
+        <button class="btn btn-primary" @disabled(! $app->videoSetting('account_id') || ! $app->videoSetting('api_token'))>Cloudflare を自動設定</button>
+    </form>
+
+    <details>
+        <summary>個別に入力する</summary>
     <form method="post" action="{{ route('org.apps.video-provider', [$organization, $app]) }}">
         @csrf @method('put')
         <div class="form-row"><label>プロバイダ</label>
@@ -101,5 +132,6 @@
         @endforeach
         <button class="btn btn-primary">保存</button>
     </form>
+    </details>
 </div>
 @endsection

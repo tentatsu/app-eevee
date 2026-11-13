@@ -16,5 +16,7 @@ final class ProviderVideo
         public readonly ?string $thumbnailUrl = null,
         public readonly ?string $message = null,
         public readonly ?bool $signedPlaybackRequired = null,
+        /** 再生 URL のホスト（Cloudflare の場合は customer-xxxx.cloudflarestream.com） */
+        public readonly ?string $playbackHost = null,
     ) {}
 }

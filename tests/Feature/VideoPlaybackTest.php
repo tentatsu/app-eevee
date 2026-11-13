@@ -6,6 +6,7 @@ use App\Enums\VideoStatus;
 use App\Enums\VideoVisibility;
 use App\Models\App;
 use App\Models\AppUser;
+use App\Models\AuditLog;
 use App\Models\Organization;
 use App\Models\PlaybackLimitEvent;
 use App\Models\PlaybackSession;
@@ -347,4 +348,79 @@ it('shows playback statistics in the admin UI', function () {
     actingAsOrgMember($this->org, OrgRole::Viewer);
     $this->get("/acme/apps/{$this->clientApp->id}/videos")->assertOk()->assertSee('Lesson 1');
     $this->get("/acme/apps/{$this->clientApp->id}/videos/{$this->video->id}/edit")->assertOk()->assertSee('同時視聴の超過件数');
+});
+
+/*
+| Cloudflare の自動設定
+*/
+
+it('provisions the signing key and webhook on Cloudflare without exposing secrets', function () {
+    $this->clientApp->video_provider_settings = ['account_id' => 'acc123', 'api_token' => 'cf-token'];
+    $this->clientApp->save();
+    Http::fake([
+        'api.cloudflare.com/client/v4/accounts/acc123/stream/webhook' => Http::sequence()
+            ->push(['success' => true, 'result' => ['notificationUrl' => '']])
+            ->push(['success' => true, 'result' => ['notificationUrl' => 'x', 'secret' => 'wh-secret-123']]),
+        'api.cloudflare.com/client/v4/accounts/acc123/stream/keys' => Http::response(['success' => true, 'result' => ['id' => 'key-new', 'pem' => base64_encode('-----BEGIN RSA PRIVATE KEY-----x-----END RSA PRIVATE KEY-----')]]),
+    ]);
+    actingAsOrgMember($this->org, OrgRole::Admin);
+
+    $res = $this->post("/acme/apps/{$this->clientApp->id}/video-provider/provision")->assertRedirect()->assertSessionHas('status');
+    expect(session('status'))->not->toContain('wh-secret-123');
+
+    Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_ends_with($r->url(), '/stream/webhook')
+        && $r['notificationUrl'] === route('webhooks.cloudflare', ['app_key' => $this->clientApp->app_key]));
+
+    $app = $this->clientApp->fresh();
+    expect($app->videoSetting('webhook_secret'))->toBe('wh-secret-123')
+        ->and($app->videoSetting('signing_key_id'))->toBe('key-new')
+        ->and($app->videoSetting('signing_private_key'))->not->toBeNull()
+        ->and($app->videoSetting('api_token'))->toBe('cf-token');
+    expect(AuditLog::query()->get()->toJson())->not->toContain('wh-secret-123')->not->toContain('PRIVATE KEY');
+});
+
+it('asks for confirmation before overwriting another webhook url', function () {
+    $this->clientApp->video_provider_settings = ['account_id' => 'acc123', 'api_token' => 'cf-token'];
+    $this->clientApp->save();
+    Http::fake([
+        'api.cloudflare.com/client/v4/accounts/acc123/stream/webhook' => Http::response(['success' => true, 'result' => ['notificationUrl' => 'https://other.example.com/hook', 'secret' => 's']]),
+        'api.cloudflare.com/client/v4/accounts/acc123/stream/keys' => Http::response(['success' => true, 'result' => ['id' => 'k', 'pem' => 'p']]),
+    ]);
+    actingAsOrgMember($this->org, OrgRole::Admin);
+
+    $this->post("/acme/apps/{$this->clientApp->id}/video-provider/provision")->assertSessionHas('webhook_conflict', 'https://other.example.com/hook');
+    Http::assertNotSent(fn (HttpRequest $r) => $r->method() === 'PUT');
+
+    $this->post("/acme/apps/{$this->clientApp->id}/video-provider/provision", ['overwrite_webhook' => 1])->assertSessionHas('status');
+    Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT');
+});
+
+it('requires the account id and api token before provisioning', function () {
+    $this->clientApp->video_provider_settings = null;
+    $this->clientApp->save();
+    actingAsOrgMember($this->org, OrgRole::Admin);
+    $this->post("/acme/apps/{$this->clientApp->id}/video-provider/provision")->assertSessionHasErrors('provision');
+});
+
+it('sets the customer subdomain from the first webhook automatically', function () {
+    $settings = $this->clientApp->video_provider_settings;
+    unset($settings['customer_subdomain']);
+    $this->clientApp->video_provider_settings = $settings;
+    $this->clientApp->save();
+    Http::fake();
+
+    $body = json_encode(['uid' => 'cf-uid-1', 'readyToStream' => true, 'status' => ['state' => 'ready'], 'requireSignedURLs' => true,
+        'playback' => ['hls' => 'https://customer-abc123.cloudflarestream.com/cf-uid-1/manifest/video.m3u8']]);
+    $this->call('POST', "/webhooks/cloudflare/{$this->clientApp->app_key}", [], [], [], self::headersToServer(signedWebhook($body, 'whsec_test')), $body)->assertOk();
+
+    expect($this->clientApp->fresh()->videoSetting('customer_subdomain'))->toBe('customer-abc123.cloudflarestream.com');
+});
+
+it('keeps unsent settings when saving only the account id and token', function () {
+    actingAsOrgMember($this->org, OrgRole::Admin);
+    $this->put("/acme/apps/{$this->clientApp->id}/video-provider", ['video_provider' => 'cloudflare_stream', 'account_id' => 'acc999'])->assertSessionHasNoErrors();
+    $app = $this->clientApp->fresh();
+    expect($app->videoSetting('account_id'))->toBe('acc999')
+        ->and($app->videoSetting('signing_key_id'))->toBe('key-abc')
+        ->and($app->videoSetting('customer_subdomain'))->toBe('customer-xyz.cloudflarestream.com');
 });

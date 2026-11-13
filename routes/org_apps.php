@@ -19,6 +19,7 @@ Route::prefix('apps/{app}')->where(['app' => '[0-9]+'])->middleware('org.app')->
     Route::post('secret', [Apps\AppController::class, 'regenerateSecret'])->name('secret');
     Route::put('firebase', [Apps\AppController::class, 'updateFirebase'])->name('firebase');
     Route::put('video-provider', [Apps\AppController::class, 'updateVideoProvider'])->name('video-provider');
+    Route::post('video-provider/provision', [Apps\AppController::class, 'provisionVideoProvider'])->name('video-provider.provision');
 
     Route::get('attributes', [Apps\AttributeDefinitionController::class, 'index'])->name('attributes.index');
     Route::post('attributes', [Apps\AttributeDefinitionController::class, 'store'])->name('attributes.store');

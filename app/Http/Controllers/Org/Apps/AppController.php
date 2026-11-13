@@ -8,6 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Models\App;
 use App\Models\Organization;
 use App\Services\Audit\AuditLogger;
+use App\Services\Video\Contracts\ProvisionsAutomatically;
+use App\Services\Video\VideoProviderException;
+use App\Services\Video\VideoProviderManager;
+use App\Services\Video\WebhookConflictException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -153,7 +157,10 @@ class AppController extends Controller
         $settings = $app->video_provider_settings ?? [];
         // 公開してよい値は空欄で上書き、秘密の値は空欄なら変更しない
         foreach (['account_id', 'signing_key_id', 'customer_subdomain'] as $key) {
-            $settings[$key] = $data[$key] ?? null;
+            // フォームに含まれている項目だけを更新する（空欄なら削除）
+            if ($request->has($key)) {
+                $settings[$key] = $data[$key] ?? null;
+            }
         }
         foreach (['api_token', 'signing_private_key', 'webhook_secret'] as $key) {
             if (! empty($data[$key])) {
@@ -170,5 +177,37 @@ class AppController extends Controller
         $audit->record('app.video_provider_updated', $app, AuditLogger::mask(['video_provider' => $data['video_provider']] + $data), '動画プロバイダの設定を更新');
 
         return back()->with('status', '動画プロバイダの設定を保存しました（秘密情報は暗号化して保存）。');
+    }
+
+    /**
+     * 動画プロバイダの自動設定（Cloudflare: 署名鍵の作成と Webhook の設定）。
+     * 秘密情報はサーバーの中だけで作って暗号化して保存し、画面やログには出さない。
+     */
+    public function provisionVideoProvider(Request $request, Organization $organization, App $app, VideoProviderManager $providers, AuditLogger $audit): RedirectResponse
+    {
+        Gate::authorize('manage-apps');
+        if ($app->videoSetting('account_id') === null || $app->videoSetting('api_token') === null) {
+            throw ValidationException::withMessages(['provision' => '先に Account ID と API Token を保存してください。']);
+        }
+
+        $provider = $providers->for($app);
+        if (! $provider instanceof ProvisionsAutomatically) {
+            throw ValidationException::withMessages(['provision' => 'この動画プロバイダは自動設定に対応していません。']);
+        }
+
+        $webhookUrl = route('webhooks.cloudflare', ['app_key' => $app->app_key]);
+        try {
+            $result = $provider->provision($app, $webhookUrl, $request->boolean('overwrite_webhook'));
+        } catch (WebhookConflictException $e) {
+            return back()->with('webhook_conflict', $e->currentUrl);
+        } catch (VideoProviderException $e) {
+            throw ValidationException::withMessages(['provision' => 'Cloudflare の設定に失敗しました: '.$e->getMessage()]);
+        }
+
+        $app->video_provider_settings = array_merge($app->video_provider_settings ?? [], $result->settings);
+        $app->save();
+        $audit->record('app.video_provider_provisioned', $app, ['webhook_url' => $webhookUrl, 'signing_key_id' => $result->settings['signing_key_id'] ?? null], '動画プロバイダを自動設定');
+
+        return back()->with('status', implode(' ', $result->notes));
     }
 }

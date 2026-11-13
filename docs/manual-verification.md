@@ -53,24 +53,20 @@ Firebase と Cloudflare の認証情報は `.env` ではなく、**管理画面 
 ## 2. Cloudflare Stream（動画）
 
 ### 2-1. Cloudflare 側の準備
-1. **Account ID**: Cloudflare ダッシュボードの右側に表示。
-2. **API Token**: My Profile → API Tokens → Create Token。権限は `Account / Stream / Edit`。
-3. **署名鍵**（再生トークン用）:
-   ```bash
-   curl -X POST "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/stream/keys" -H "Authorization: Bearer <API_TOKEN>"
-   ```
-   レスポンスの `result.id`（Key ID）と `result.pem`（base64 のまま貼ってよい）を控える。**pem は再取得できない**ので安全に保管する。
-4. **Webhook**:
-   ```bash
-   curl -X PUT "https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/stream/webhook" \
-     -H "Authorization: Bearer <API_TOKEN>" -H "Content-Type: application/json" \
-     -d '{"notificationUrl": "https://{host}/webhooks/cloudflare/{app_key}"}'
-   ```
-   レスポンスの `result.secret` が Webhook の署名シークレット。※ Webhook の URL はアカウントに 1 つです。1 つの Cloudflare アカウントを複数アプリで共有する場合は、代表のアプリの URL を登録し、残りは「プロバイダから状態を取得」ボタンで反映してください（アプリごとに Cloudflare アカウントを分けるのが推奨）。
-5. **カスタマーサブドメイン**: Stream の動画詳細の埋め込みコードなどに出る `customer-xxxx.cloudflarestream.com`。
+1. Cloudflare のアカウントで **Stream を有効にする**（有料。保存した動画の分数と配信した分数で課金）。
+2. **Account ID**: Cloudflare ダッシュボードの右側（またはアカウントのホーム）に表示。
+3. **API Token**: My Profile → API Tokens → Create Token → Custom token。権限は `Account / Stream / Edit`、対象は使うアカウント。
 
-### 2-2. app-eevee への登録
-管理画面 → アプリ設定 → 動画プロバイダ に、Account ID / カスタマーサブドメイン / API Token / Key ID / 秘密鍵 / Webhook シークレットを入力して保存。
+### 2-2. app-eevee への登録（自動設定）
+1. 管理画面 → アプリ設定 → 動画プロバイダ に Account ID と API Token を入れて保存。
+2. **「Cloudflare を自動設定」**を押す。app-eevee のサーバーが Cloudflare の API を呼び、次を行う。
+   - 再生トークン用の署名鍵を作成（`POST /stream/keys`）し、Key ID と秘密鍵を暗号化して保存
+   - Webhook の送信先を `https://{APP_URL}/webhooks/cloudflare/{app_key}` に設定（`PUT /stream/webhook`）し、署名シークレットを暗号化して保存
+   - 秘密情報は画面・ログ・監査ログには出さない
+3. カスタマーサブドメイン（`customer-xxxx.cloudflarestream.com`）は、最初の動画の変換完了の Webhook で自動的に設定される。
+4. Webhook は Cloudflare のアカウントに1つだけ。別の URL が設定済みの場合は確認画面が出る。1つの Cloudflare アカウントを複数アプリで共有すると、Webhook は最後に設定したアプリにしか届かない（残りは「プロバイダから状態を取得」で反映）。アプリごとに Cloudflare アカウントを分けるのが推奨。
+
+手動で設定する場合は「個別に入力する」から、`POST /stream/keys` の `id`・`pem` と、`PUT /stream/webhook` の `secret` を入力する。
 
 ### 2-3. 確認項目
 | 確認すること | 手順 | 期待結果 |
