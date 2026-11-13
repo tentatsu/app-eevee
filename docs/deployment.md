@@ -62,9 +62,8 @@ EEVEE_HORIZON_ENABLED=false
 EEVEE_PUSH_QUEUE=push
 LOG_SECURITY_CHANNELS=stderr              # セキュリティログを Cloud のログ画面に出す
 
-MAIL_MAILER=smtp                          # Resend / Postmark / Amazon SES など
-MAIL_FROM_ADDRESS=no-reply@example.com
-MAIL_FROM_NAME="${APP_NAME}"
+# メールは Laravel Cloud の Resend 連携を使う（環境に Resend を接続すると MAIL_* と API キーが自動で設定される）。
+# 送信元は Resend で認証済みのドメインのアドレス（例: no-reply@mail.example.com）。resend/resend-php は導入済み。
 
 SYSTEM_IP_ALLOWLIST=                      # システム管理画面を制限する場合
 ```
