@@ -68,7 +68,17 @@ class EeveeApi(private val tokenProvider: () -> String?) {
 
     // ---- 動画 ----
 
-    suspend fun videos(page: Int = 1): Envelope<List<Video>> = getEnvelope("/videos?per_page=50&page=$page")
+    /** 動画一覧。category / tag で絞り込める */
+    suspend fun videos(category: String? = null, tag: String? = null): Envelope<List<Video>> {
+        val query = buildList {
+            add("per_page=100")
+            category?.let { add("category=" + java.net.URLEncoder.encode(it, "UTF-8")) }
+            tag?.let { add("tag=" + java.net.URLEncoder.encode(it, "UTF-8")) }
+        }.joinToString("&")
+        return getEnvelope("/videos?$query")
+    }
+
+    suspend fun video(id: Long): Video = getEnvelope<Video>("/videos/$id").data
 
     suspend fun play(videoId: Long, installationId: String): PlayResult =
         post("/videos/$videoId/play", buildJsonObject { put("installation_id", installationId) })
@@ -79,6 +89,18 @@ class EeveeApi(private val tokenProvider: () -> String?) {
     suspend fun stop(sessionId: String, installationId: String) {
         post<JsonObject>("/playback-sessions/$sessionId/stop", buildJsonObject { put("installation_id", installationId) })
     }
+
+    // ---- お知らせ ----
+
+    /** 一覧（ピン留め → 新しい順）。トークンを付けると、セグメント向けのお知らせと is_read も含む */
+    suspend fun notices(page: Int = 1): Envelope<List<Notice>> = getEnvelope("/notices?per_page=50&page=$page")
+
+    suspend fun notice(id: Long): Notice = getEnvelope<Notice>("/notices/$id").data
+
+    /** 既読にする（ログインが必要） */
+    suspend fun markNoticeRead(id: Long): UnreadCount = post("/notices/$id/read", buildJsonObject { })
+
+    suspend fun unreadNoticeCount(): Int = getEnvelope<UnreadCount>("/notices/unread-count").data.unreadCount
 
     // ---- プッシュ ----
 

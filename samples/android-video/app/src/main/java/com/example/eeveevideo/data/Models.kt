@@ -45,6 +45,7 @@ data class Video(
     /** public = 誰でも視聴可 / members = ログインが必要 */
     val visibility: String,
     val category: String? = null,
+    val tags: List<String> = emptyList(),
     /** 今の状態（ログインの有無）で再生できるか */
     val playable: Boolean,
 ) {
@@ -66,3 +67,19 @@ data class HeartbeatResult(
     /** kicked = 他の端末で再生が始まった / expired = ハートビートが途絶えた / stopped = 終了済み */
     val reason: String? = null,
 )
+
+@Serializable
+data class Notice(
+    val id: Long,
+    val title: String,
+    @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
+    @SerialName("is_pinned") val isPinned: Boolean = false,
+    @SerialName("published_at") val publishedAt: String? = null,
+    @SerialName("is_read") val isRead: Boolean = false,
+    /** 詳細だけに含まれる: Markdown と、それを変換した安全な HTML */
+    val body: String? = null,
+    @SerialName("body_html") val bodyHtml: String? = null,
+)
+
+@Serializable
+data class UnreadCount(@SerialName("unread_count") val unreadCount: Int)
