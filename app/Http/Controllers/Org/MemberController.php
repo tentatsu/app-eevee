@@ -45,6 +45,19 @@ class MemberController extends Controller
         return back()->with('status', $invitation->email.' に招待メールを送信しました。');
     }
 
+    public function resendInvitation(Request $request, Organization $organization, OrganizationInvitation $invitation, InvitationService $service, AuditLogger $audit): RedirectResponse
+    {
+        if ($invitation->accepted_at !== null) {
+            throw ValidationException::withMessages(['invitation' => 'この招待は受け入れ済みです。']);
+        }
+        /** @var AdminUser $actor */
+        $actor = $request->user('admin');
+        $new = $service->resend($invitation, $actor->email);
+        $audit->record('member.invitation_resent', $new, ['email' => $new->email, 'role' => $new->role->value], $new->email.' に招待を再送');
+
+        return back()->with('status', $new->email.' に招待メールを再送しました（以前のリンクは無効になりました）。');
+    }
+
     public function revokeInvitation(Organization $organization, OrganizationInvitation $invitation, AuditLogger $audit): RedirectResponse
     {
         $invitation->delete();

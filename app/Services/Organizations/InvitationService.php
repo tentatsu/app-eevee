@@ -33,6 +33,16 @@ class InvitationService
     }
 
     /**
+     * 招待を再送する。新しいリンクを発行して古いリンクは無効にし、有効期限も延ばす。
+     */
+    public function resend(OrganizationInvitation $invitation, ?string $invitedBy): OrganizationInvitation
+    {
+        $organization = Organization::query()->findOrFail($invitation->organization_id);
+
+        return $this->invite($organization, $invitation->email, $invitation->role, $invitedBy ?? $invitation->invited_by);
+    }
+
+    /**
      * 招待を受け入れて組織のメンバーにする。
      */
     public function accept(OrganizationInvitation $invitation, AdminUser $user): OrganizationMember

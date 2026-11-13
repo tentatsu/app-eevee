@@ -50,14 +50,18 @@
     <h2>招待中</h2>
     <div class="card">
         <table>
-            <tr><th>メールアドレス</th><th>ロール</th><th>有効期限</th><th></th></tr>
+            <tr><th>メールアドレス</th><th>ロール</th><th>送信日時</th><th>有効期限</th><th></th></tr>
             @foreach ($invitations as $inv)
                 <tr>
                     <td>{{ $inv->email }}</td>
                     <td>{{ $inv->role->label() }}</td>
-                    <td>{{ eevee_dt($inv->expires_at) }}</td>
-                    <td>
-                        <form method="post" action="{{ route('org.members.invitations.destroy', [$organization, $inv->id]) }}">
+                    <td>{{ eevee_dt($inv->created_at) }}</td>
+                    <td>{{ eevee_dt($inv->expires_at) }}@if ($inv->expires_at->isPast()) <span class="badge badge-danger">期限切れ</span>@endif</td>
+                    <td class="row">
+                        <form method="post" action="{{ route('org.members.invitations.resend', [$organization, $inv->id]) }}">
+                            @csrf<button class="btn btn-sm">再送</button>
+                        </form>
+                        <form method="post" action="{{ route('org.members.invitations.destroy', [$organization, $inv->id]) }}" onsubmit="return confirm('招待を取り消しますか？')">
                             @csrf @method('delete')<button class="btn btn-sm">取り消し</button>
                         </form>
                     </td>

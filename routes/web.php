@@ -27,6 +27,8 @@ Route::prefix('system')->name('system.')->middleware('system.ip')->group(functio
         Route::post('organizations/{organization}/suspend', [System\OrganizationController::class, 'suspend'])->name('organizations.suspend');
         Route::post('organizations/{organization}/resume', [System\OrganizationController::class, 'resume'])->name('organizations.resume');
         Route::post('organizations/{organization}/invitations', [System\OrganizationController::class, 'invite'])->name('organizations.invite');
+        Route::post('organizations/{organization}/invitations/{invitation}/resend', [System\OrganizationController::class, 'resendInvitation'])->whereNumber('invitation')->name('organizations.invitations.resend');
+        Route::delete('organizations/{organization}/invitations/{invitation}', [System\OrganizationController::class, 'revokeInvitation'])->whereNumber('invitation')->name('organizations.invitations.destroy');
         Route::delete('organizations/{organization}/ip-allowlist', [System\OrganizationController::class, 'clearIpAllowlist'])->name('organizations.ip-allowlist.clear');
 
         Route::get('ip-allowlist', [System\IpAllowlistController::class, 'edit'])->name('ip-allowlist.edit');
@@ -62,6 +64,7 @@ Route::prefix('{organization}')
             Route::middleware('can:manage-organization')->group(function () {
                 Route::get('members', [Org\MemberController::class, 'index'])->name('members.index');
                 Route::post('members/invitations', [Org\MemberController::class, 'invite'])->name('members.invite');
+                Route::post('members/invitations/{invitation}/resend', [Org\MemberController::class, 'resendInvitation'])->name('members.invitations.resend');
                 Route::delete('members/invitations/{invitation}', [Org\MemberController::class, 'revokeInvitation'])->name('members.invitations.destroy');
                 Route::put('members/{member}', [Org\MemberController::class, 'update'])->name('members.update');
                 Route::delete('members/{member}', [Org\MemberController::class, 'destroy'])->name('members.destroy');

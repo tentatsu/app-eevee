@@ -117,6 +117,37 @@ class OrganizationController extends Controller
         return back()->with('status', $invitation->email.' に招待メールを送信しました。');
     }
 
+    public function resendInvitation(Request $request, Organization $organization, int $invitation, InvitationService $service, AuditLogger $audit): RedirectResponse
+    {
+        $model = $this->findPendingInvitation($organization, $invitation);
+        /** @var SystemAdmin $admin */
+        $admin = $request->user('system');
+        $new = $service->resend($model, 'system:'.$admin->email);
+        $audit->record('member.invitation_resent', $new, ['email' => $new->email, 'role' => $new->role->value], $new->email.' に招待を再送（システム管理者）', $organization);
+
+        return back()->with('status', $new->email.' に招待メールを再送しました（以前のリンクは無効になりました）。');
+    }
+
+    public function revokeInvitation(Organization $organization, int $invitation, AuditLogger $audit): RedirectResponse
+    {
+        $model = $this->findPendingInvitation($organization, $invitation);
+        $model->delete();
+        $audit->record('member.invitation_revoked', $model, ['email' => $model->email], $model->email.' の招待を取り消し（システム管理者）', $organization);
+
+        return back()->with('status', '招待を取り消しました。');
+    }
+
+    private function findPendingInvitation(Organization $organization, int $id): OrganizationInvitation
+    {
+        $invitation = OrganizationInvitation::withoutGlobalScopes()
+            ->where('organization_id', $organization->id)
+            ->whereNull('accepted_at')
+            ->find($id);
+        abort_if($invitation === null, 404);
+
+        return $invitation;
+    }
+
     /**
      * 組織のIP制限を解除する（組織の管理者が締め出された場合の救済）。
      */

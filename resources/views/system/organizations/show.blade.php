@@ -26,7 +26,26 @@
         @endforelse
     </table>
     @if ($invitations->isNotEmpty())
-        <p class="muted">招待中: @foreach ($invitations as $i){{ $i->email }}（{{ $i->role->label() }}） @endforeach</p>
+        <h3 style="margin-top:16px">招待中</h3>
+        <table>
+            <tr><th>メールアドレス</th><th>ロール</th><th>送信日時</th><th>有効期限</th><th></th></tr>
+            @foreach ($invitations as $i)
+                <tr>
+                    <td>{{ $i->email }}</td>
+                    <td>{{ $i->role->label() }}</td>
+                    <td>{{ eevee_dt($i->created_at, 'Y-m-d H:i', $organization->timezone) }}</td>
+                    <td>{{ eevee_dt($i->expires_at, 'Y-m-d H:i', $organization->timezone) }}@if ($i->expires_at->isPast()) <span class="badge badge-danger">期限切れ</span>@endif</td>
+                    <td class="row">
+                        <form method="post" action="{{ route('system.organizations.invitations.resend', [$organization, $i->id]) }}">
+                            @csrf<button class="btn btn-sm">再送</button>
+                        </form>
+                        <form method="post" action="{{ route('system.organizations.invitations.destroy', [$organization, $i->id]) }}" onsubmit="return confirm('招待を取り消しますか？')">
+                            @csrf @method('delete')<button class="btn btn-sm">取り消し</button>
+                        </form>
+                    </td>
+                </tr>
+            @endforeach
+        </table>
     @endif
     <form method="post" action="{{ route('system.organizations.invite', $organization) }}" class="row" style="margin-top:12px">
         @csrf
