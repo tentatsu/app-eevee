@@ -143,6 +143,9 @@ class AppController extends Controller
     public function updateVideoProvider(Request $request, Organization $organization, App $app, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('manage-apps');
+        if ($app->usesSharedVideoAccount()) {
+            throw ValidationException::withMessages(['provision' => 'このアプリは Oneframe が用意した共用の動画アカウントを使っています（変更はシステム管理者に依頼してください）。']);
+        }
         $providers = array_keys((array) config('eevee.video.providers'));
         $data = $request->validate([
             'video_provider' => ['required', Rule::in($providers === [] ? ['cloudflare_stream'] : $providers)],
@@ -186,6 +189,9 @@ class AppController extends Controller
     public function provisionVideoProvider(Request $request, Organization $organization, App $app, VideoProviderManager $providers, AuditLogger $audit): RedirectResponse
     {
         Gate::authorize('manage-apps');
+        if ($app->usesSharedVideoAccount()) {
+            throw ValidationException::withMessages(['provision' => 'このアプリは Oneframe が用意した共用の動画アカウントを使っています（変更はシステム管理者に依頼してください）。']);
+        }
         if ($app->videoSetting('account_id') === null || $app->videoSetting('api_token') === null) {
             throw ValidationException::withMessages(['provision' => '先に Account ID と API Token を保存してください。']);
         }

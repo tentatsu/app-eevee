@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Webhooks\CloudflareWebhookController;
+use App\Http\Controllers\Webhooks\SharedCloudflareWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -8,5 +9,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    // 共用の Cloudflare アカウント（アカウントに1つの Webhook）。{token} は推測できないランダム値
+    Route::post('cloudflare/shared/{token}', SharedCloudflareWebhookController::class)->middleware('throttle:600,1')->name('cloudflare.shared');
     Route::post('cloudflare/{app_key}', CloudflareWebhookController::class)->middleware(['api.app', 'throttle:600,1'])->name('cloudflare');
 });

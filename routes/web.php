@@ -34,6 +34,11 @@ Route::prefix('system')->name('system.')->middleware('system.ip')->group(functio
         Route::get('ip-allowlist', [System\IpAllowlistController::class, 'edit'])->name('ip-allowlist.edit');
         Route::put('ip-allowlist', [System\IpAllowlistController::class, 'update'])->name('ip-allowlist.update');
         Route::get('audit-logs', [System\AuditLogController::class, 'index'])->name('audit-logs');
+        Route::get('usage', [System\UsageController::class, 'index'])->name('usage');
+
+        Route::resource('provider-accounts', System\ProviderAccountController::class)->except(['show']);
+        Route::post('provider-accounts/{provider_account}/provision', [System\ProviderAccountController::class, 'provision'])->name('provider-accounts.provision');
+        Route::put('apps/{app}/video-account', [System\ProviderAccountController::class, 'assign'])->whereNumber('app')->name('apps.video-account');
     });
 });
 

@@ -59,6 +59,33 @@
     </form>
 </div>
 
+<h2>アプリ</h2>
+<div class="card">
+    <table>
+        <tr><th>アプリ</th><th>app_key</th><th>動画アカウント</th></tr>
+        @forelse ($apps as $app)
+            <tr>
+                <td>{{ $app->name }}</td>
+                <td class="mono">{{ $app->app_key }}</td>
+                <td>
+                    <form method="post" action="{{ route('system.apps.video-account', $app->id) }}" class="row">
+                        @csrf @method('put')
+                        <select name="video_provider_account_id" style="width:auto">
+                            <option value="">アプリ専用（顧客の Cloudflare）</option>
+                            @foreach ($sharedAccounts as $sa)
+                                <option value="{{ $sa->id }}" @selected($app->video_provider_account_id === $sa->id)>共用: {{ $sa->name }}</option>
+                            @endforeach
+                        </select>
+                        <button class="btn btn-sm">変更</button>
+                    </form>
+                </td>
+            </tr>
+        @empty
+            <tr><td colspan="3" class="muted">アプリがありません。</td></tr>
+        @endforelse
+    </table>
+</div>
+
 <h2>IP制限</h2>
 <div class="card">
     @if ($ipEntries->isEmpty())

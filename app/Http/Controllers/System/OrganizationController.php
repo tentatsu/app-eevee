@@ -5,10 +5,12 @@ namespace App\Http\Controllers\System;
 use App\Enums\OrganizationStatus;
 use App\Enums\OrgRole;
 use App\Http\Controllers\Controller;
+use App\Models\App;
 use App\Models\IpAllowEntry;
 use App\Models\Organization;
 use App\Models\OrganizationInvitation;
 use App\Models\OrganizationMember;
+use App\Models\ProviderAccount;
 use App\Models\SystemAdmin;
 use App\Services\Audit\AuditLogger;
 use App\Services\IpAccess\IpAllowlistService;
@@ -55,8 +57,10 @@ class OrganizationController extends Controller
         $members = OrganizationMember::query()->where('organization_id', $organization->id)->with('adminUser')->get();
         $invitations = OrganizationInvitation::withoutGlobalScopes()->where('organization_id', $organization->id)->whereNull('accepted_at')->latest()->get();
         $ipEntries = IpAllowEntry::query()->where('organization_id', $organization->id)->get();
+        $apps = App::withoutGlobalScopes()->where('organization_id', $organization->id)->orderBy('name')->get();
+        $sharedAccounts = ProviderAccount::query()->where('provider', 'cloudflare_stream')->orderBy('name')->get();
 
-        return view('system.organizations.show', compact('organization', 'members', 'invitations', 'ipEntries'));
+        return view('system.organizations.show', compact('organization', 'members', 'invitations', 'ipEntries', 'apps', 'sharedAccounts'));
     }
 
     public function edit(Organization $organization): View

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -39,9 +40,9 @@ class AppServiceProvider extends ServiceProvider
         Password::defaults(fn () => Password::min(8));
 
         // 組織の管理画面のメニュー: アプリの切り替え用に、組織のアプリ一覧を渡す
-        \Illuminate\Support\Facades\View::composer('layouts.org', function ($view) {
+        View::composer('layouts.org', function ($view) {
             if (app(TenantContext::class)->organizationId() !== null) {
-                $view->with('orgApps', \App\Models\App::query()->orderBy('name')->get(['id', 'name']));
+                $view->with('orgApps', App::query()->orderBy('name')->get(['id', 'name']));
             }
         });
 

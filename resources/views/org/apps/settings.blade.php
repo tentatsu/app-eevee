@@ -72,6 +72,11 @@
 </div>
 
 <h2>動画プロバイダ</h2>
+@if ($app->usesSharedVideoAccount())
+<div class="card">
+    <p><span class="badge badge-ok">共用のアカウントを使用中</span> このアプリは、Oneframe が用意した共用の Cloudflare Stream アカウントで動画を配信しています。動画のアップロード・配信はそのまま使えます。設定の変更はシステム管理者に依頼してください。</p>
+</div>
+@else
 <div class="card">
     <p class="muted">Cloudflare Stream の場合は、<strong>Account ID と API Token（権限: Media › Stream › Edit）を保存してから「Cloudflare を自動設定」</strong>を押してください。署名鍵の作成と Webhook の設定をサーバーで行い、秘密情報は暗号化して保存します（画面には表示しません）。</p>
     <table style="margin-bottom:12px">
@@ -134,4 +139,5 @@
     </form>
     </details>
 </div>
+@endif
 @endsection

@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use Database\Factories\AppFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -113,11 +114,42 @@ class App extends Model
         return ! empty($this->firebase_credentials['project_id']) && ! empty($this->firebase_credentials['private_key']);
     }
 
+    /**
+     * 動画プロバイダの設定値。共用のアカウントを割り当てられていれば、そのアカウントの設定を使う。
+     */
     public function videoSetting(string $key): ?string
     {
+        $account = $this->sharedVideoAccount();
+        if ($account !== null) {
+            return $account->setting($key);
+        }
         $value = $this->video_provider_settings[$key] ?? null;
 
         return is_scalar($value) && $value !== '' ? (string) $value : null;
+    }
+
+    public function usesSharedVideoAccount(): bool
+    {
+        return $this->video_provider_account_id !== null;
+    }
+
+    public function sharedVideoAccount(): ?ProviderAccount
+    {
+        if ($this->video_provider_account_id === null) {
+            return null;
+        }
+        if (! $this->relationLoaded('videoProviderAccount')) {
+            $this->setRelation('videoProviderAccount', ProviderAccount::query()->find($this->video_provider_account_id));
+        }
+
+        /** @var ProviderAccount|null */
+        return $this->getRelation('videoProviderAccount');
+    }
+
+    /** @return BelongsTo<ProviderAccount, $this> */
+    public function videoProviderAccount(): BelongsTo
+    {
+        return $this->belongsTo(ProviderAccount::class, 'video_provider_account_id');
     }
 
     public function getRouteKeyName(): string
