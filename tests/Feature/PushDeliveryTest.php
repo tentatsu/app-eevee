@@ -318,3 +318,10 @@ it('forbids viewers from sending', function () {
     $this->post("/acme/apps/{$this->clientApp->id}/campaigns/{$c->id}/send")->assertForbidden();
     $this->get("/acme/apps/{$this->clientApp->id}/campaigns")->assertOk();
 });
+
+it('warns when there is no device to send to', function () {
+    Device::factory()->for($this->clientApp)->create(['fcm_token' => null]);
+    actingAsOrgMember($this->org, OrgRole::Editor);
+    $c = campaign();
+    $this->get("/acme/apps/{$this->clientApp->id}/campaigns/{$c->id}")->assertOk()->assertSee('送信予定の端末が 0 台です');
+});

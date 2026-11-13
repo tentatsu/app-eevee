@@ -18,6 +18,15 @@
     @endcan
 </div>
 
+@if ($estimate && $estimate['devices'] === 0)
+    <div class="alert alert-warn">
+        送信予定の端末が 0 台です。通知を送れる端末（FCM トークンを登録済みで、通知を許可していて、無効になっていない端末）が対象にありません。
+        アプリに Firebase（google-services.json / GoogleService-Info.plist）が組み込まれ、起動時に端末登録APIで fcm_token を送っているか確認してください（「端末」画面の「通知」欄に「トークンなし」と表示されます）。
+    </div>
+@endif
+@if (! $estimate && $campaign->status->value === 'sent' && $campaign->target_count === 0)
+    <div class="alert alert-warn">対象の端末が 0 台だったため、送信していません。</div>
+@endif
 <div class="stats" style="margin-bottom:18px">
     @if ($estimate)
         <div class="stat"><div class="v">{{ number_format($estimate['devices']) }}</div><div class="l">送信予定の端末</div></div>
