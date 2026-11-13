@@ -1,0 +1,9 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+# Firebase の設定は各自のプロジェクトのものを置く（コミットしない）
+app/google-services.json

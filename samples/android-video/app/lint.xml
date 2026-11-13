@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- network_security_config は build.gradle.kts の manifestPlaceholders から参照している -->
+    <issue id="UnusedResources">
+        <ignore path="src/main/res/xml/network_security_config.xml" />
+        <ignore path="src/main/res/xml/network_security_config_debug.xml" />
+    </issue>
+</lint>

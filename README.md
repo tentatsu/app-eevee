@@ -107,6 +107,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | [docs/manual-verification.md](docs/manual-verification.md) | 実際の FCM・Cloudflare での動作確認手順 |
 | [docs/deployment.md](docs/deployment.md) | Laravel Cloud へのデプロイ、TrustProxies、運用（VPS・AWS の場合も） |
 | [docs/performance.md](docs/performance.md) | セグメント抽出の性能計測結果 |
+| [samples/android-video/](samples/android-video/README.md) | Android のサンプルアプリ（動画配信・会員登録・プッシュ通知） |
 
 ## ディレクトリ構成（主なもの）
 

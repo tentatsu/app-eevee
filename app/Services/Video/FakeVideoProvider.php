@@ -39,7 +39,8 @@ class FakeVideoProvider implements VideoProvider
     {
         $token = 'fake.'.base64_encode($video->provider_video_id.'|'.$expiresAt->getTimestamp());
 
-        return new PlaybackUrls("https://videodelivery.example/{$token}/manifest/video.m3u8", null, $token, $expiresAt);
+        // 実際に再生できる公開のテスト用 HLS を返す（サンプルアプリの動作確認用）
+        return new PlaybackUrls((string) config('eevee.video.fake_hls_url'), null, $token, $expiresAt);
     }
 
     public function verifyWebhook(App $app, Request $request): bool

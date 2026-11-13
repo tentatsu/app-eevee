@@ -53,6 +53,8 @@ return [
 
     'video' => [
         'fake' => (bool) env('EEVEE_VIDEO_FAKE', false),
+        // EEVEE_VIDEO_FAKE=true のときに再生 API が返す HLS（公開のテスト用ストリーム）
+        'fake_hls_url' => env('EEVEE_VIDEO_FAKE_HLS_URL', 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'),
         'heartbeat_interval' => 30,
         'heartbeat_timeout' => (int) env('EEVEE_VIDEO_HEARTBEAT_TIMEOUT', 90),
         // 長さ不明の動画に使うトークン有効期限（秒）
