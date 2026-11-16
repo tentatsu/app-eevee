@@ -42,8 +42,9 @@ interface VideoProvider
 
     /**
      * プロバイダが自動で作ったサムネイルの URL（署名付き）。作れなければ null。
+     * $atSeconds を指定すると、動画のその位置の画像にする。
      */
-    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt): ?string;
+    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt, ?float $atSeconds = null): ?string;
 
     /**
      * Webhook の署名を検証する。

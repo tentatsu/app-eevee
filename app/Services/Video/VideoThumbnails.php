@@ -32,9 +32,37 @@ class VideoThumbnails
             // 期限を日単位でそろえ、同じ日のうちは同じ URL にする（アプリ側で画像をキャッシュできる）
             $expiresAt = CarbonImmutable::now()->startOfDay()->addDays(2);
 
-            return $this->providers->for($app)->thumbnailUrl($app, $video, $expiresAt);
+            return $this->providers->for($app)->thumbnailUrl($app, $video, $expiresAt, $video->thumbnailSeconds());
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * 管理画面で選ぶための、位置（%）ごとの自動サムネイルの候補。作れなければ空。
+     *
+     * @return array<int, string>
+     */
+    public function candidates(App $app, Video $video): array
+    {
+        if ($video->status !== VideoStatus::Ready || $video->provider_video_id === null || ! $video->duration_seconds) {
+            return [];
+        }
+        $expiresAt = CarbonImmutable::now()->startOfDay()->addDays(2);
+        $out = [];
+        try {
+            $provider = $this->providers->for($app);
+            foreach (Video::THUMBNAIL_POSITIONS as $pct) {
+                $url = $provider->thumbnailUrl($app, $video, $expiresAt, $video->thumbnailSeconds($pct));
+                if ($url === null) {
+                    return [];
+                }
+                $out[$pct] = $url;
+            }
+        } catch (Throwable) {
+            return [];
+        }
+
+        return $out;
     }
 }

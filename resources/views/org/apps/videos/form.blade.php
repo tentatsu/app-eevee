@@ -74,6 +74,19 @@
         @csrf @if ($video->exists) @method('put') @endif
         <div class="form-row"><label>タイトル</label><input type="text" name="title" value="{{ old('title', $video->title) }}" required></div>
         <div class="form-row"><label>説明</label><textarea name="description" rows="4">{{ old('description', $video->description) }}</textarea></div>
+        @if (! empty($thumbCandidates))
+        <div class="form-row"><label>自動サムネイルの位置（下の URL が空欄のときに使います）</label>
+            <div class="thumb-choices">
+                @foreach ($thumbCandidates as $pct => $url)
+                    <label class="thumb-choice">
+                        <input type="radio" name="thumbnail_position" value="{{ $pct }}" @checked((int) old('thumbnail_position', $video->thumbnail_position ?? \App\Models\Video::DEFAULT_THUMBNAIL_POSITION) === $pct)>
+                        <img src="{{ $url }}" alt="{{ $pct }}%" loading="lazy">
+                        <span>{{ $pct }}%（{{ gmdate($video->duration_seconds >= 3600 ? 'H:i:s' : 'i:s', (int) $video->thumbnailSeconds($pct)) }}）</span>
+                    </label>
+                @endforeach
+            </div>
+        </div>
+        @endif
         <div class="form-row"><label>サムネイル画像の URL（空欄なら、Cloudflare が動画から自動で作ったサムネイルを使います）</label><input type="url" name="thumbnail_url" value="{{ old('thumbnail_url', \App\Services\Video\Cloudflare\CloudflareStreamProvider::isProviderThumbnail($video->thumbnail_url) ? '' : $video->thumbnail_url) }}"></div>
         <div class="form-row"><label>公開範囲</label>
             <select name="visibility" style="max-width:320px">

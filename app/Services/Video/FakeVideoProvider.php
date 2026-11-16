@@ -43,7 +43,7 @@ class FakeVideoProvider implements VideoProvider
         return new PlaybackUrls((string) config('eevee.video.fake_hls_url'), null, $token, $expiresAt);
     }
 
-    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt): ?string
+    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt, ?float $atSeconds = null): ?string
     {
         return null;
     }

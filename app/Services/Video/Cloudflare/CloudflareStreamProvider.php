@@ -142,14 +142,16 @@ class CloudflareStreamProvider implements ProvisionsAutomatically, VideoProvider
      * 署名付き URL 必須の動画は、サムネイルにもトークンが要る。
      * 同じ有効期限なら同じ URL になる（nbf を付けない）ので、アプリ側で画像をキャッシュできる。
      */
-    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt): ?string
+    public function thumbnailUrl(App $app, Video $video, CarbonInterface $expiresAt, ?float $atSeconds = null): ?string
     {
         if ($video->provider_video_id === null || $app->videoSetting('signing_key_id') === null || $app->videoSetting('signing_private_key') === null) {
             return null;
         }
         $token = $this->signToken($app, $video, $expiresAt, null);
+        // 位置を URL で指定する（アップロード時の thumbnailTimestampPct より優先され、位置を変えると URL も変わるのでキャッシュが残らない）
+        $time = $atSeconds !== null ? 'time='.rtrim(rtrim(number_format(max(0, $atSeconds), 1, '.', ''), '0'), '.').'s&' : '';
 
-        return "https://{$this->host($app)}/{$token}/thumbnails/thumbnail.jpg?height=480";
+        return "https://{$this->host($app)}/{$token}/thumbnails/thumbnail.jpg?{$time}height=480";
     }
 
     /**

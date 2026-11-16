@@ -17,7 +17,7 @@ class Video extends Model
     use BelongsToApp;
 
     protected $fillable = [
-        'app_id', 'provider', 'provider_video_id', 'title', 'description', 'thumbnail_url',
+        'app_id', 'provider', 'provider_video_id', 'title', 'description', 'thumbnail_url', 'thumbnail_position',
         'duration_seconds', 'status', 'status_message', 'visibility', 'required_entitlement', 'publish_start_at',
         'publish_end_at', 'sort_order', 'category', 'tags',
     ];
@@ -31,8 +31,28 @@ class Video extends Model
             'publish_end_at' => 'datetime',
             'tags' => 'array',
             'duration_seconds' => 'integer',
+            'thumbnail_position' => 'integer',
             'sort_order' => 'integer',
         ];
+    }
+
+    /** 自動サムネイルの位置（%）の既定値。冒頭は黒い画面やタイトルだけのことが多いので、少し進んだ位置にする */
+    public const DEFAULT_THUMBNAIL_POSITION = 10;
+
+    /** 管理画面で選べるサムネイルの位置（%） */
+    public const THUMBNAIL_POSITIONS = [0, 5, 10, 25, 50, 75];
+
+    /**
+     * 自動サムネイルを作る位置（秒）。長さが分からなければ null（プロバイダの既定に任せる）。
+     */
+    public function thumbnailSeconds(?int $position = null): ?float
+    {
+        if (! $this->duration_seconds) {
+            return null;
+        }
+        $pct = $position ?? $this->thumbnail_position ?? self::DEFAULT_THUMBNAIL_POSITION;
+
+        return round($this->duration_seconds * $pct / 100, 1);
     }
 
     /** @return HasMany<PlaybackSession, $this> */

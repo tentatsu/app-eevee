@@ -77,8 +77,9 @@ class VideoController extends Controller
         $stats = $this->stats([$video->id])[$video->id] ?? null;
         $recent = $video->playbackSessions()->latest('started_at')->limit(20)->get();
         $thumb = $thumbnails->url($app, $video);
+        $thumbCandidates = $thumbnails->candidates($app, $video);
 
-        return view('org.apps.videos.form', compact('organization', 'app', 'video', 'stats', 'recent', 'thumb'));
+        return view('org.apps.videos.form', compact('organization', 'app', 'video', 'stats', 'recent', 'thumb', 'thumbCandidates'));
     }
 
     public function update(Request $request, Organization $organization, App $app, Video $video, AuditLogger $audit): RedirectResponse
@@ -195,6 +196,7 @@ class VideoController extends Controller
             'title' => ['required', 'string', 'max:191'],
             'description' => ['nullable', 'string', 'max:10000'],
             'thumbnail_url' => ['nullable', 'url', 'max:2048'],
+            'thumbnail_position' => ['nullable', 'integer', Rule::in(Video::THUMBNAIL_POSITIONS)],
             'visibility' => ['required', Rule::enum(VideoVisibility::class)],
             'publish_start_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
             'publish_end_at' => ['nullable', 'date_format:Y-m-d\TH:i', 'after:publish_start_at'],
@@ -218,6 +220,6 @@ class VideoController extends Controller
             'category' => $data['category'] ?? null,
             'tags' => $tags === [] ? null : $tags,
             'required_entitlement' => $data['required_entitlement'] ?? null,
-        ];
+        ] + ($request->has('thumbnail_position') ? ['thumbnail_position' => isset($data['thumbnail_position']) ? (int) $data['thumbnail_position'] : null] : []);
     }
 }
