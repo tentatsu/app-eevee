@@ -108,6 +108,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | [docs/openapi.json](docs/openapi.json) | アプリ向けAPI・サーバー間APIの OpenAPI 3.1 仕様書 |
 | [docs/manual-verification.md](docs/manual-verification.md) | 実際の FCM・Cloudflare での動作確認手順 |
 | [docs/deployment.md](docs/deployment.md) | Laravel Cloud へのデプロイ、TrustProxies、運用（VPS・AWS の場合も） |
+| [docs/laravel-cloud-checklist.md](docs/laravel-cloud-checklist.md) | Laravel Cloud に載せるときのチェックリスト（ほかのシステムでも使える形） |
 | [docs/performance.md](docs/performance.md) | セグメント抽出の性能計測結果 |
 | [samples/android-video/](samples/android-video/README.md) | Android のサンプルアプリ（動画配信・会員登録・プッシュ通知） |
 
