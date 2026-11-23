@@ -93,9 +93,9 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 |---|---|
 | `eevee:system-admin:create {email}` | システム管理者を作成 |
 | `eevee:ip-allowlist:clear {org_slug}` / `--system` | IP 制限の緊急解除 |
-| `eevee:push:dispatch-scheduled` | 予約配信の送信（毎分） |
+| `eevee:push:dispatch-scheduled` | 予約配信の送信（既定は毎分。`EEVEE_SCHEDULE_FREQUENT` で変更） |
 | `eevee:push:prune-deliveries` | 保持期間を過ぎた送信結果の削除（毎日） |
-| `eevee:playback:expire` | ハートビートが途絶えた視聴セッションの期限切れ処理（毎分） |
+| `eevee:playback:expire` | ハートビートが途絶えた視聴セッションの期限切れ処理（同上） |
 | `eevee:segments:benchmark {app_key}` | セグメント抽出の性能計測 |
 | `eevee:doctor` | 本番の設定と DB・Valkey・キュー・スケジューラーの確認 |
 

@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Support\Ip\IpRange;
+use App\Support\ScheduleFrequency;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -147,8 +149,11 @@ LUA, 1, $key);
 
             return;
         }
+        // 直近の実行予定（から2分の余裕）より後に記録があれば正常
+        $ok = CarbonImmutable::parse($last)->greaterThanOrEqualTo(ScheduleFrequency::previousRun()->subMinutes(2));
         $minutes = (int) now()->diffInMinutes($last, true);
-        $this->row('スケジューラー', $minutes <= 2 ? 'OK' : 'WARN', '最終実行: '.$last.($minutes > 2 ? '（'.$minutes.'分前。止まっているか、アプリが休止している）' : ''));
+        $interval = ScheduleFrequency::isEveryMinute() ? '毎分' : ScheduleFrequency::expression().'（約'.ScheduleFrequency::intervalMinutes().'分ごと）';
+        $this->row('スケジューラー', $ok ? 'OK' : 'WARN', '最終実行: '.$last.'、間隔: '.$interval.($ok ? '' : '（'.$minutes.'分前。止まっている可能性がある）'));
     }
 
     private function checkProxiesAndMail(): void

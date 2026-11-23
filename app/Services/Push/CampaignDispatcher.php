@@ -59,6 +59,31 @@ class CampaignDispatcher
         PrepareCampaignJob::dispatch($campaign->id);
     }
 
+    /**
+     * 送信日時を過ぎた予約キャンペーンをキューへ投入する。投入した件数を返す。
+     */
+    public function dispatchDue(int $limit = 100): int
+    {
+        $campaigns = PushCampaign::withoutGlobalScopes()
+            ->where('status', CampaignStatus::Scheduled->value)
+            ->where('scheduled_at', '<=', now())
+            ->orderBy('scheduled_at')
+            ->limit($limit)
+            ->get();
+
+        $count = 0;
+        foreach ($campaigns as $campaign) {
+            try {
+                $this->queue($campaign);
+                $count++;
+            } catch (RuntimeException) {
+                // 別のプロセスが先に処理した
+            }
+        }
+
+        return $count;
+    }
+
     public function cancelSchedule(PushCampaign $campaign): bool
     {
         return PushCampaign::withoutGlobalScopes()->whereKey($campaign->id)

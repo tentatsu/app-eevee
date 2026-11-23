@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateAppSecret;
+use App\Http\Middleware\DispatchDueCampaigns;
 use App\Http\Middleware\EnsureAppUserToken;
 use App\Http\Middleware\EnsureOrganizationMember;
 use App\Http\Middleware\ResetTenantContext;
@@ -53,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->replace(Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
         $middleware->prepend(ResetTenantContext::class);
+        $middleware->append(DispatchDueCampaigns::class);
 
         $middleware->alias([
             'org' => ResolveOrganization::class,

@@ -30,7 +30,11 @@
         <div class="form-row"><label>アプリユーザーID（対象がユーザーID指定のとき。カンマ・改行区切り）</label>
             <textarea name="target_user_ids" rows="2">{{ old('target_user_ids', implode(',', $campaign->target_user_ids ?? [])) }}</textarea></div>
         <div class="form-row"><label>送信日時（空欄なら「送信」ボタンで即時送信。{{ $app->displayTimezone() }}）</label>
-            <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at', eevee_input_dt($campaign->scheduled_at)) }}" style="max-width:260px"></div>
+            <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at', eevee_input_dt($campaign->scheduled_at)) }}" style="max-width:260px">
+            @unless (\App\Support\ScheduleFrequency::isEveryMinute())
+                <p class="hint">サーバーを休止させる設定のため、管理画面やアプリへのアクセスがない時間帯は、予約配信が最大 {{ \App\Support\ScheduleFrequency::intervalMinutes() }} 分ほど遅れることがあります。</p>
+            @endunless
+        </div>
         <button class="btn btn-primary">下書きを保存</button>
     </form>
 </div>
