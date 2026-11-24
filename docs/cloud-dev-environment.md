@@ -15,8 +15,8 @@ app-eevee を Claude Code のクラウド実行（claude.ai/code やアプリか
 | 2 | **コンテナは使い捨て。** しばらく使わないと消え、次は新しいコンテナで始まる | 依存パッケージの導入や DB の作成を毎回やり直すことになる。環境の「セットアップスクリプト」に書いておく（3 章） |
 | 3 | **MySQL・Redis は自動で起動しない** | 新しいコンテナでは毎回 `service mysql start` / `service redis-server start` が必要。途中で止まることもあるので、テストが `Connection refused` で全滅したらまず起動し直す |
 | 4 | **外への通信は許可したホストだけ**（プロキシ経由） | パッケージのレジストリ（Packagist・npm・Maven Central など）は既定で通る。それ以外は環境の設定で許可する（4 章） |
-| 5 | **GitHub の zip のダウンロードが通らない**（`api.github.com` / `codeload.github.com` が 403） | Composer の既定（dist = zip）が失敗する。`--prefer-source`（git clone）で入れる。git での取得元がないパッケージ（`phpstan/phpstan`）は別の手当てが要る（2 章） |
-| 6 | **`--prefer-source` はディスクを大量に使う** | 各パッケージに `.git` が残り、`vendor` が約 8GB、Composer のキャッシュも約 8GB になった。入れたあと `.git` とキャッシュを消す（2 章） |
+| 5 | **GitHub の zip のダウンロードが通らない**（`api.github.com` / `codeload.github.com` が 403） | Composer の既定（dist = zip）が失敗する。git（github.com）は通るので、`scripts/composer-prefetch.py` で git から zip を作って Composer のキャッシュに置いてから入れる（2 章） |
+| 6 | **`--prefer-source`（git clone）で逃げるとディスクがあふれる** | 各パッケージに履歴ごとの `.git` が残り、`vendor` 約 8GB ＋ キャッシュ約 8GB で、ディスクの割り当てを使い切って失敗した。8 分もかかる。使わない（2 章） |
 | 7 | **ディスクの割り当てには上限がある** | `df` の空きが残っていても書けなくなる。`No space left on device` が出たら、大きなキャッシュ（Composer・Gradle）を消す |
 | 8 | **API キーをチャットに貼らない** | 環境の「ネットワークシークレット」に保存すると、プロキシがリクエストに自動で付ける（5 章）。コンテナの中にもログにも値が残らない |
 | 9 | **作業はコミットして push しないと残らない** | コンテナが消えると、push していない変更は失われる |
@@ -42,52 +42,28 @@ app-eevee の環境で確認したもの。イメージが変わると違う可�
 
 ## 2. PHP（Composer）の入れ方
 
-### 2-1. 基本は `--prefer-source`
+### 2-1. git から zip を作ってキャッシュに置く（`scripts/composer-prefetch.py`）
 
 ```bash
-COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-source --no-interaction --no-progress
+python3 scripts/composer-prefetch.py
+COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-dist --no-interaction --no-progress
 ```
 
-- GitHub の zip は 403 になるので、git clone で取る。Packagist 自体は通る。
-- 時間がかかる（app-eevee の 165 パッケージで約 8 分）。
+- `composer.lock` の各パッケージを、GitHub から `git fetch --depth 1 origin <コミット>` で浅く取得して zip にし、Composer のキャッシュ（`cache-files-dir`）に置く。8 並列。
+- そのあと `--prefer-dist` で入れると、Composer はキャッシュから展開するので zip のダウンロードが起きない。
+- キャッシュのファイル名は `パッケージ名/sha1(ダウンロード URL).zip`（参照 ID ではないので注意。Composer 2.8 で確認）。
+- app-eevee（165 パッケージ）で、取得 31 秒・キャッシュ 331MB、インストール 9 秒・`vendor` 1.3GB。
+- ほかのリポジトリでも、`scripts/composer-prefetch.py` をそのままコピーして使える（Python 3 の標準ライブラリだけで動く）。
 
-### 2-2. git での取得元がないパッケージ（`phpstan/phpstan` など）
+### 2-2. 試してうまくいかなかった方法
 
-`composer.lock` で `source` がなく、`dist` が `api.github.com` の zip だけのパッケージは、`--prefer-source` でも zip を取りに行って 403 → `Could not authenticate against github.com` で止まる。
-
-手当て: そのリポジトリを git clone して zip にし、**Composer のキャッシュに置く**。キャッシュのファイル名は `パッケージ名/sha1(ダウンロード URL).zip`（参照 ID ではないので注意。Composer 2.8 で確認）。
-
-```bash
-C=$(COMPOSER_ALLOW_SUPERUSER=1 composer config cache-files-dir)
-python3 -c 'import json,hashlib; d=json.load(open("composer.lock")); [print(p["name"], p["version"], hashlib.sha1(p["dist"]["url"].encode()).hexdigest()) for p in d["packages"]+d.get("packages-dev",[]) if "source" not in p and "api.github.com" in p.get("dist",{}).get("url","")]' \
-| while read -r name ver key; do
-    if [ ! -f "$C/$name/$key.zip" ]; then
-      rm -rf /tmp/pkg-src
-      git -c advice.detachedHead=false clone -q --depth 1 --branch "$ver" "https://github.com/$name.git" /tmp/pkg-src
-      rm -rf /tmp/pkg-src/.git
-      mkdir -p "$C/$name" && (cd /tmp/pkg-src && zip -qr "$C/$name/$key.zip" .) && rm -rf /tmp/pkg-src
-    fi
-  done
-```
-
-`--branch "$ver"` はタグ名がバージョンと同じ前提（`phpstan/phpstan` は `2.3.5` のようなタグ）。`v` が付くリポジトリなら合わせる。
-
-### 2-3. 入れたあとにディスクを空ける
-
-```bash
-# 各パッケージの .git（合わせて数 GB）と、git のキャッシュを消す
-find vendor -mindepth 2 -maxdepth 3 -name .git -type d -prune -exec rm -rf {} +
-rm -rf "$(COMPOSER_ALLOW_SUPERUSER=1 composer config cache-vcs-dir)"
-```
-
-app-eevee では `vendor` が 7.9GB → 1.3GB になり、テストはそのまま通った。
-
-### 2-4. 使えなかった方法
-
-- **サードパーティの Composer ミラー:** 安全確認の仕組みに止められた。使わない。
-- **GitHub のトークンを Composer に設定する:** zip のホスト自体が許可されていないので解決しない。
-
----
+| 方法 | 結果 |
+|---|---|
+| `composer install --prefer-source`（git clone） | 8 分以上かかり、`.git` 込みで `vendor` 約 8GB ＋ キャッシュ約 8GB。ディスクの割り当てを使い切って失敗 |
+| `--prefer-source` のあとに `.git` を消す | 消す前のピークで容量が足りない |
+| git の取得元がないパッケージ（`phpstan/phpstan`） | `--prefer-source` でも zip を取りに行き、403 → `Could not authenticate against github.com` で止まる（prefetch なら問題なし） |
+| サードパーティの Composer ミラー | 安全確認の仕組みに止められた |
+| GitHub のトークンを Composer に設定 | zip のホスト自体が許可されていないので解決しない |
 
 ## 3. セットアップスクリプト（環境の設定）
 
@@ -113,10 +89,9 @@ if [ -d app-eevee ]; then
     # Sail 用の接続先（mysql / redis）を、このコンテナの 127.0.0.1 に変える。外部サービスはフェイクに
     sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/; s/^REDIS_HOST=.*/REDIS_HOST=127.0.0.1/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/; s/^EEVEE_PUSH_FAKE=.*/EEVEE_PUSH_FAKE=true/; s/^EEVEE_VIDEO_FAKE=.*/EEVEE_VIDEO_FAKE=true/' .env
   fi
-  # （2-2 の phpstan の手当てをここに入れる）
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-source --no-interaction --no-progress
-  find vendor -mindepth 2 -maxdepth 3 -name .git -type d -prune -exec rm -rf {} +
-  rm -rf "$(COMPOSER_ALLOW_SUPERUSER=1 composer config cache-vcs-dir)"
+  # GitHub の zip をダウンロードできないので、git で取得して Composer のキャッシュに置いてから入れる
+  python3 scripts/composer-prefetch.py
+  COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-dist --no-interaction --no-progress
   grep -q '^APP_KEY=base64' .env || php artisan key:generate --force
   php artisan migrate --force
 fi
@@ -124,6 +99,8 @@ fi
 
 - MySQL の起動直後は接続できないことがあるので、`SELECT 1` が通るまで待つ（`mysqladmin ping` は待ちきれないことがあった）。
 - テストは `phpunit.xml` で `testing` データベースと Redis の DB 14・15 を使う設定にしてある。
+- 新しい clone・MySQL と Redis が止まった状態から、このスクリプトで約 50 秒。そのままテスト 230 件・静的解析・整形が通ることを確かめた（2026年11月）。
+- **`.env.example` から作った `.env` で試すこと。** app-eevee では、`.env.example` の `REDIS_SCHEME=`（空）が Redis の接続を壊す不具合が、新しい環境で初めて見つかった（手元の `.env` にはその行がなかった）。設定側で空文字を未設定として扱うよう直した。
 
 ---
 
@@ -177,6 +154,6 @@ app-eevee で追加したもの:
 ## 8. そのほかの小さな知見
 
 - **時刻に依存するテスト**: コンテナは UTC。「3時間進めても同じ日」のようなテストは、日本時間の朝（UTC の深夜）に落ちることがある。テストの中で時刻を固定する（app-eevee では `travelTo(now()->startOfDay()->addHours(9))`）。
-- **長い処理**: Bash は10分で打ち切られ、それ以上はバックグラウンドに回る。Composer の `--prefer-source` の初回などは時間がかかる。
+- **長い処理**: Bash は10分で打ち切られ、それ以上はバックグラウンドに回る。
 - **Android のビルド**: Robolectric と Roborazzi で、エミュレーターなしに画面のスクリーンショットのテストができた。APK はビルドしてファイルとして渡し、実機で確かめてもらう。
 - **画面の確認**: Playwright（Chromium）で管理画面を開いてスクリーンショットを撮り、見た目を確かめられる。

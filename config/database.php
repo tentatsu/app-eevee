@@ -156,7 +156,7 @@ return [
         'default' => [
             'url' => env('REDIS_URL'),
             // マネージドの Valkey / Redis で TLS が必要な場合は REDIS_SCHEME=tls
-            'scheme' => env('REDIS_SCHEME'),
+            'scheme' => env('REDIS_SCHEME') ?: null, // 空文字（REDIS_SCHEME=）は未設定として扱う
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
@@ -171,7 +171,7 @@ return [
         'cache' => [
             'url' => env('REDIS_URL'),
             // マネージドの Valkey / Redis で TLS が必要な場合は REDIS_SCHEME=tls
-            'scheme' => env('REDIS_SCHEME'),
+            'scheme' => env('REDIS_SCHEME') ?: null, // 空文字（REDIS_SCHEME=）は未設定として扱う
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),

@@ -43,7 +43,7 @@ app-eevee を Laravel Cloud に載せたときに必要だった調整と、運�
 
     'default' => [
         'url' => env('REDIS_URL'),
-        'scheme' => env('REDIS_SCHEME'),          // TLS が必要なら tls
+        'scheme' => env('REDIS_SCHEME') ?: null,  // TLS が必要なら tls。空文字（REDIS_SCHEME=）は未設定扱いにする
         'host' => env('REDIS_HOST', '127.0.0.1'),
         'username' => env('REDIS_USERNAME'),
         'password' => env('REDIS_PASSWORD'),
@@ -53,7 +53,7 @@ app-eevee を Laravel Cloud に載せたときに必要だった調整と、運�
 
     'cache' => [
         'url' => env('REDIS_URL'),
-        'scheme' => env('REDIS_SCHEME'),
+        'scheme' => env('REDIS_SCHEME') ?: null,
         'host' => env('REDIS_HOST', '127.0.0.1'),
         'username' => env('REDIS_USERNAME'),
         'password' => env('REDIS_PASSWORD'),
