@@ -109,6 +109,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 | [docs/manual-verification.md](docs/manual-verification.md) | 実際の FCM・Cloudflare での動作確認手順 |
 | [docs/deployment.md](docs/deployment.md) | Laravel Cloud へのデプロイ、TrustProxies、運用（VPS・AWS の場合も） |
 | [docs/laravel-cloud-checklist.md](docs/laravel-cloud-checklist.md) | Laravel Cloud に載せるときのチェックリスト（ほかのシステムでも使える形） |
+| [docs/cloud-dev-environment.md](docs/cloud-dev-environment.md) | Claude Code のクラウド環境で開発するときの知見（Docker なし、Composer の取得、セットアップスクリプト、許可ホスト、シークレット） |
 | [docs/performance.md](docs/performance.md) | セグメント抽出の性能計測結果 |
 | [samples/android-video/](samples/android-video/README.md) | Android のサンプルアプリ（動画配信・会員登録・プッシュ通知） |
 
