@@ -71,9 +71,10 @@ COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-dist --no-interaction --no-
 
 - リポジトリの**親ディレクトリ**から始まる。リポジトリには `cd リポジトリ名` で入る（絶対パスは使わない）。
 - 失敗するとセッションが始まらない。リポジトリがない場合は飛ばすようにする。
+- 1行は 200 文字まで（承認の画面で全部読めるように）。長いコマンドは分ける。
 - 環境変数・シークレットは読めない。秘密の値は書かない。
 
-app-eevee 用（MySQL・Redis の起動、DB とユーザーの作成、Composer、`.env`、マイグレーション）:
+app-eevee 用（MySQL・Redis の起動、DB とユーザーの作成、Composer、`.env`、マイグレーション）。環境「app-eevee」に保存済み:
 
 ```bash
 #!/bin/bash
@@ -81,13 +82,15 @@ set -e
 service mysql start >/dev/null 2>&1 || true
 service redis-server start >/dev/null 2>&1 || true
 for i in $(seq 1 30); do mysql -uroot -e "SELECT 1" >/dev/null 2>&1 && break; sleep 1; done
-mysql -uroot -e "CREATE DATABASE IF NOT EXISTS eevee; CREATE DATABASE IF NOT EXISTS testing; CREATE USER IF NOT EXISTS 'sail'@'localhost' IDENTIFIED BY 'password'; GRANT ALL ON *.* TO 'sail'@'localhost';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS eevee; CREATE DATABASE IF NOT EXISTS testing;"
+mysql -uroot -e "CREATE USER IF NOT EXISTS 'sail'@'localhost' IDENTIFIED BY 'password'; GRANT ALL ON *.* TO 'sail'@'localhost';"
 if [ -d app-eevee ]; then
   cd app-eevee
   if [ ! -f .env ]; then
     cp .env.example .env
     # Sail 用の接続先（mysql / redis）を、このコンテナの 127.0.0.1 に変える。外部サービスはフェイクに
-    sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/; s/^REDIS_HOST=.*/REDIS_HOST=127.0.0.1/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/; s/^EEVEE_PUSH_FAKE=.*/EEVEE_PUSH_FAKE=true/; s/^EEVEE_VIDEO_FAKE=.*/EEVEE_VIDEO_FAKE=true/' .env
+    sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/; s/^REDIS_HOST=.*/REDIS_HOST=127.0.0.1/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
+    sed -i 's/^EEVEE_PUSH_FAKE=.*/EEVEE_PUSH_FAKE=true/; s/^EEVEE_VIDEO_FAKE=.*/EEVEE_VIDEO_FAKE=true/' .env
   fi
   # GitHub の zip をダウンロードできないので、git で取得して Composer のキャッシュに置いてから入れる
   python3 scripts/composer-prefetch.py
